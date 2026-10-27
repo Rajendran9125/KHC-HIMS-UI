@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { 
   Building2, 
   ChevronDown, 
-  LayoutGrid, 
+  Home,
   ShieldCheck, 
   UserPlus, 
   UserCheck, 
@@ -17,8 +17,7 @@ import {
   Activity,
   Layers,
   LogOut,
-  User as UserIcon,
-  Lock
+  User as UserIcon
 } from 'lucide-react';
 
 export default function Navbar({ activeView, setActiveView, currentUser, onLogout }) {
@@ -59,7 +58,7 @@ export default function Navbar({ activeView, setActiveView, currentUser, onLogou
     setOpenMenu(openMenu === menuName ? null : menuName);
   };
 
-  // Check if at least one sub-item in section is allowed
+  // Permissions check for main tabs
   const hasMasterAccess = isAdmin || isAllowed('admin') || isAllowed('users') || isAllowed('services');
   const hasRegAccess = isAdmin || ['op-new', 'op-review', 'patient-update', 'modify-doctor-reg', 'modify-patient-type', 'modify-payment-type-reg'].some(isAllowed);
   const hasBillAccess = isAdmin || ['op-billing', 'modify-doctor-bill', 'modify-payment-type-bill'].some(isAllowed);
@@ -67,6 +66,7 @@ export default function Navbar({ activeView, setActiveView, currentUser, onLogou
 
   return (
     <header className="navbar-container" ref={navRef}>
+      {/* Top Header Bar */}
       <div className="navbar-top">
         <div className="navbar-brand" onClick={() => setActiveView('dashboard')}>
           <div className="brand-logo">
@@ -82,9 +82,10 @@ export default function Navbar({ activeView, setActiveView, currentUser, onLogou
           <button 
             className={`nav-pill-btn ${activeView === 'dashboard' ? 'active' : ''}`}
             onClick={() => setActiveView('dashboard')}
+            title="Return to Clinic Home & Overview"
           >
-            <LayoutGrid size={16} />
-            <span>Concept Menu Grid</span>
+            <Home size={16} />
+            <span>Clinic Home</span>
           </button>
 
           {/* User Profile Pill */}
@@ -94,7 +95,7 @@ export default function Navbar({ activeView, setActiveView, currentUser, onLogou
               <div className="user-details">
                 <span className="user-name">{currentUser.fullName || currentUser.username}</span>
                 <span className={`badge ${isAdmin ? 'badge-primary' : 'badge-success'}`} style={{ fontSize: '0.65rem', padding: '1px 6px' }}>
-                  {currentUser.role} {isAdmin ? '(ALL RIGHTS)' : '(SELECTED)'}
+                  {currentUser.role} {isAdmin ? '(ALL RIGHTS)' : '(SELECTED MENUS)'}
                 </span>
               </div>
               <button className="logout-btn" onClick={onLogout} title="Sign Out">
@@ -105,16 +106,20 @@ export default function Navbar({ activeView, setActiveView, currentUser, onLogou
         </div>
       </div>
 
-      {/* Main Navigation Bar */}
+      {/* Main Top Navigation Strip (MASTER, REGISTRATION, BILLING, REPORT) */}
       <nav className="navbar-menu-strip">
-        {/* 1. MASTER (Hidden or restricted for normal user unless granted) */}
+        {/* 1. MASTER TAB */}
         {hasMasterAccess && (
-          <div className="nav-dropdown-wrapper">
+          <div 
+            className="nav-dropdown-wrapper"
+            onMouseEnter={() => setOpenMenu('master')}
+            onMouseLeave={() => setOpenMenu(null)}
+          >
             <button 
               className={`nav-menu-btn ${['admin', 'users', 'services'].includes(activeView) ? 'active' : ''}`}
               onClick={() => toggleDropdown('master')}
             >
-              <ShieldCheck size={16} />
+              <ShieldCheck size={17} />
               <span>MASTER</span>
               <ChevronDown size={14} className={openMenu === 'master' ? 'rotate' : ''} />
             </button>
@@ -126,10 +131,10 @@ export default function Navbar({ activeView, setActiveView, currentUser, onLogou
                     className={`dropdown-item ${activeView === 'admin' ? 'active' : ''}`}
                     onClick={() => handleSelect('admin')}
                   >
-                    <ShieldCheck size={16} className="item-icon" />
-                    <div>
-                      <div className="item-title">ADMIN</div>
-                      <div className="item-desc">Doctor Master &amp; Hospital Controls</div>
+                    <span className="dropdown-bullet"></span>
+                    <div className="dropdown-text">
+                      <div className="dropdown-title">ADMIN</div>
+                      <div className="dropdown-desc">Doctor Master &amp; Hospital Settings</div>
                     </div>
                   </button>
                 )}
@@ -139,23 +144,23 @@ export default function Navbar({ activeView, setActiveView, currentUser, onLogou
                     className={`dropdown-item ${activeView === 'users' ? 'active' : ''}`}
                     onClick={() => handleSelect('users')}
                   >
-                    <UserPlus size={16} className="item-icon" />
-                    <div>
-                      <div className="item-title">USER CREATION</div>
-                      <div className="item-desc">Staff &amp; System User Credentials</div>
+                    <span className="dropdown-bullet"></span>
+                    <div className="dropdown-text">
+                      <div className="dropdown-title">USER CREATION</div>
+                      <div className="dropdown-desc">Staff Accounts, Passwords &amp; Roles</div>
                     </div>
                   </button>
                 )}
 
                 {isAllowed('services') && (
                   <button 
-                    className={`dropdown-item ${activeView === 'services' ? 'active' : ''}`}
+                    className={`dropdown-item highlight-tariff ${activeView === 'services' ? 'active' : ''}`}
                     onClick={() => handleSelect('services')}
                   >
-                    <Layers size={16} className="item-icon" />
-                    <div>
-                      <div className="item-title">SERVICE MASTER</div>
-                      <div className="item-desc">Tariff Rates (ECG, Lab, CBC, OP/IP Rate)</div>
+                    <span className="dropdown-bullet bullet-tariff"></span>
+                    <div className="dropdown-text">
+                      <div className="dropdown-title text-tariff">SERVICE MASTER (TARIFF)</div>
+                      <div className="dropdown-desc">Rates: ECG, Lab, CBC, OP/IP Tariff</div>
                     </div>
                   </button>
                 )}
@@ -164,14 +169,18 @@ export default function Navbar({ activeView, setActiveView, currentUser, onLogou
           </div>
         )}
 
-        {/* 2. REGISTRATION */}
+        {/* 2. REGISTRATION TAB */}
         {hasRegAccess && (
-          <div className="nav-dropdown-wrapper">
+          <div 
+            className="nav-dropdown-wrapper"
+            onMouseEnter={() => setOpenMenu('registration')}
+            onMouseLeave={() => setOpenMenu(null)}
+          >
             <button 
               className={`nav-menu-btn ${['op-new', 'op-review', 'patient-update', 'modify-doctor-reg', 'modify-patient-type', 'modify-payment-type-reg'].includes(activeView) ? 'active' : ''}`}
               onClick={() => toggleDropdown('registration')}
             >
-              <UserCheck size={16} />
+              <UserCheck size={17} />
               <span>REGISTRATION</span>
               <ChevronDown size={14} className={openMenu === 'registration' ? 'rotate' : ''} />
             </button>
@@ -183,10 +192,10 @@ export default function Navbar({ activeView, setActiveView, currentUser, onLogou
                     className={`dropdown-item ${activeView === 'op-new' ? 'active' : ''}`}
                     onClick={() => handleSelect('op-new')}
                   >
-                    <UserPlus size={16} className="item-icon" />
-                    <div>
-                      <div className="item-title">OP NEW</div>
-                      <div className="item-desc">New Patient Outpatient Registration</div>
+                    <span className="dropdown-bullet"></span>
+                    <div className="dropdown-text">
+                      <div className="dropdown-title">OP NEW</div>
+                      <div className="dropdown-desc">New Patient Outpatient Registration</div>
                     </div>
                   </button>
                 )}
@@ -196,10 +205,10 @@ export default function Navbar({ activeView, setActiveView, currentUser, onLogou
                     className={`dropdown-item ${activeView === 'op-review' ? 'active' : ''}`}
                     onClick={() => handleSelect('op-review')}
                   >
-                    <History size={16} className="item-icon" />
-                    <div>
-                      <div className="item-title">OP REVIEW</div>
-                      <div className="item-desc">Follow-up &amp; Review Consultations</div>
+                    <span className="dropdown-bullet"></span>
+                    <div className="dropdown-text">
+                      <div className="dropdown-title">OP REVIEW</div>
+                      <div className="dropdown-desc">Follow-up &amp; Review Consultations</div>
                     </div>
                   </button>
                 )}
@@ -209,10 +218,10 @@ export default function Navbar({ activeView, setActiveView, currentUser, onLogou
                     className={`dropdown-item ${activeView === 'patient-update' ? 'active' : ''}`}
                     onClick={() => handleSelect('patient-update')}
                   >
-                    <UserCog size={16} className="item-icon" />
-                    <div>
-                      <div className="item-title">PATIENT DETAIL UPDATE</div>
-                      <div className="item-desc">Update Demographics &amp; Contact Info</div>
+                    <span className="dropdown-bullet"></span>
+                    <div className="dropdown-text">
+                      <div className="dropdown-title">PATIENT DETAIL UPDATE</div>
+                      <div className="dropdown-desc">Update Demographics &amp; Phone Number</div>
                     </div>
                   </button>
                 )}
@@ -222,10 +231,10 @@ export default function Navbar({ activeView, setActiveView, currentUser, onLogou
                     className={`dropdown-item ${activeView === 'modify-doctor-reg' ? 'active' : ''}`}
                     onClick={() => handleSelect('modify-doctor-reg')}
                   >
-                    <Stethoscope size={16} className="item-icon" />
-                    <div>
-                      <div className="item-title">DOCTORE NAME MODIFY - REGISTRATION</div>
-                      <div className="item-desc">Reassign Consulting Doctor</div>
+                    <span className="dropdown-bullet"></span>
+                    <div className="dropdown-text">
+                      <div className="dropdown-title">DOCTOR NAME MODIFY - REGISTRATION</div>
+                      <div className="dropdown-desc">Reassign Doctor on Registration Slip</div>
                     </div>
                   </button>
                 )}
@@ -235,10 +244,10 @@ export default function Navbar({ activeView, setActiveView, currentUser, onLogou
                     className={`dropdown-item ${activeView === 'modify-patient-type' ? 'active' : ''}`}
                     onClick={() => handleSelect('modify-patient-type')}
                   >
-                    <Activity size={16} className="item-icon" />
-                    <div>
-                      <div className="item-title">PATIENT TYPE MODIFY</div>
-                      <div className="item-desc">General, VIP, Corporate or Insurance</div>
+                    <span className="dropdown-bullet"></span>
+                    <div className="dropdown-text">
+                      <div className="dropdown-title">PATIENT TYPE MODIFY</div>
+                      <div className="dropdown-desc">General, VIP, Corporate or Insurance</div>
                     </div>
                   </button>
                 )}
@@ -248,10 +257,10 @@ export default function Navbar({ activeView, setActiveView, currentUser, onLogou
                     className={`dropdown-item ${activeView === 'modify-payment-type-reg' ? 'active' : ''}`}
                     onClick={() => handleSelect('modify-payment-type-reg')}
                   >
-                    <CreditCard size={16} className="item-icon" />
-                    <div>
-                      <div className="item-title">PAYMENT TYPE MODIFY</div>
-                      <div className="item-desc">Cash, Card, UPI on Registration</div>
+                    <span className="dropdown-bullet"></span>
+                    <div className="dropdown-text">
+                      <div className="dropdown-title">PAYMENT TYPE MODIFY</div>
+                      <div className="dropdown-desc">Cash, Card, UPI on Registration</div>
                     </div>
                   </button>
                 )}
@@ -260,14 +269,18 @@ export default function Navbar({ activeView, setActiveView, currentUser, onLogou
           </div>
         )}
 
-        {/* 3. BILLING */}
+        {/* 3. BILLING TAB */}
         {hasBillAccess && (
-          <div className="nav-dropdown-wrapper">
+          <div 
+            className="nav-dropdown-wrapper"
+            onMouseEnter={() => setOpenMenu('billing')}
+            onMouseLeave={() => setOpenMenu(null)}
+          >
             <button 
               className={`nav-menu-btn ${['op-billing', 'modify-doctor-bill', 'modify-payment-type-bill'].includes(activeView) ? 'active' : ''}`}
               onClick={() => toggleDropdown('billing')}
             >
-              <Receipt size={16} />
+              <Receipt size={17} />
               <span>BILLING</span>
               <ChevronDown size={14} className={openMenu === 'billing' ? 'rotate' : ''} />
             </button>
@@ -279,10 +292,10 @@ export default function Navbar({ activeView, setActiveView, currentUser, onLogou
                     className={`dropdown-item ${activeView === 'op-billing' ? 'active' : ''}`}
                     onClick={() => handleSelect('op-billing')}
                   >
-                    <Receipt size={16} className="item-icon" />
-                    <div>
-                      <div className="item-title">OP SERVICE BILLING</div>
-                      <div className="item-desc">Lab, Radiology &amp; Procedure Invoicing</div>
+                    <span className="dropdown-bullet"></span>
+                    <div className="dropdown-text">
+                      <div className="dropdown-title">OP SERVICE BILLING</div>
+                      <div className="dropdown-desc">Lab, Radiology &amp; Procedure Billing</div>
                     </div>
                   </button>
                 )}
@@ -292,10 +305,10 @@ export default function Navbar({ activeView, setActiveView, currentUser, onLogou
                     className={`dropdown-item ${activeView === 'modify-doctor-bill' ? 'active' : ''}`}
                     onClick={() => handleSelect('modify-doctor-bill')}
                   >
-                    <Stethoscope size={16} className="item-icon" />
-                    <div>
-                      <div className="item-title">DOCTOR NAME MODIFY - OP BILL</div>
-                      <div className="item-desc">Update Tagged Doctor on Invoice</div>
+                    <span className="dropdown-bullet"></span>
+                    <div className="dropdown-text">
+                      <div className="dropdown-title">DOCTOR NAME MODIFY - OP BILL</div>
+                      <div className="dropdown-desc">Update Tagged Doctor on Invoice</div>
                     </div>
                   </button>
                 )}
@@ -305,10 +318,10 @@ export default function Navbar({ activeView, setActiveView, currentUser, onLogou
                     className={`dropdown-item ${activeView === 'modify-payment-type-bill' ? 'active' : ''}`}
                     onClick={() => handleSelect('modify-payment-type-bill')}
                   >
-                    <CreditCard size={16} className="item-icon" />
-                    <div>
-                      <div className="item-title">PAYMENT TYPE MODIFY</div>
-                      <div className="item-desc">Change Payment Mode on Invoice</div>
+                    <span className="dropdown-bullet"></span>
+                    <div className="dropdown-text">
+                      <div className="dropdown-title">PAYMENT TYPE MODIFY</div>
+                      <div className="dropdown-desc">Cash, Card, UPI, Credit on Bill</div>
                     </div>
                   </button>
                 )}
@@ -317,14 +330,18 @@ export default function Navbar({ activeView, setActiveView, currentUser, onLogou
           </div>
         )}
 
-        {/* 4. REPORT */}
+        {/* 4. REPORT TAB */}
         {hasReportAccess && (
-          <div className="nav-dropdown-wrapper">
+          <div 
+            className="nav-dropdown-wrapper"
+            onMouseEnter={() => setOpenMenu('report')}
+            onMouseLeave={() => setOpenMenu(null)}
+          >
             <button 
               className={`nav-menu-btn ${['report-billing', 'report-revenue', 'report-registration'].includes(activeView) ? 'active' : ''}`}
               onClick={() => toggleDropdown('report')}
             >
-              <BarChart3 size={16} />
+              <BarChart3 size={17} />
               <span>REPORT</span>
               <ChevronDown size={14} className={openMenu === 'report' ? 'rotate' : ''} />
             </button>
@@ -336,10 +353,10 @@ export default function Navbar({ activeView, setActiveView, currentUser, onLogou
                     className={`dropdown-item ${activeView === 'report-billing' ? 'active' : ''}`}
                     onClick={() => handleSelect('report-billing')}
                   >
-                    <FileText size={16} className="item-icon" />
-                    <div>
-                      <div className="item-title">OP BILLING</div>
-                      <div className="item-desc">Financial Audit &amp; Invoicing Registry</div>
+                    <span className="dropdown-bullet"></span>
+                    <div className="dropdown-text">
+                      <div className="dropdown-title">OP BILLING</div>
+                      <div className="dropdown-desc">Billing Register &amp; Daily Invoices</div>
                     </div>
                   </button>
                 )}
@@ -349,10 +366,10 @@ export default function Navbar({ activeView, setActiveView, currentUser, onLogou
                     className={`dropdown-item ${activeView === 'report-revenue' ? 'active' : ''}`}
                     onClick={() => handleSelect('report-revenue')}
                   >
-                    <PieChart size={16} className="item-icon" />
-                    <div>
-                      <div className="item-title">REVENUE (SUMMARY + SERVICE WIAS)</div>
-                      <div className="item-desc">Category Breakdown &amp; Total Inflow</div>
+                    <span className="dropdown-bullet"></span>
+                    <div className="dropdown-text">
+                      <div className="dropdown-title">REVENUE (SUMMARY + SERVICE WISE)</div>
+                      <div className="dropdown-desc">Category Breakdown &amp; Financial Inflow</div>
                     </div>
                   </button>
                 )}
@@ -362,10 +379,10 @@ export default function Navbar({ activeView, setActiveView, currentUser, onLogou
                     className={`dropdown-item ${activeView === 'report-registration' ? 'active' : ''}`}
                     onClick={() => handleSelect('report-registration')}
                   >
-                    <BarChart3 size={16} className="item-icon" />
-                    <div>
-                      <div className="item-title">OP REGISTRATION</div>
-                      <div className="item-desc">Footfall, Doctor Loads &amp; Patient Types</div>
+                    <span className="dropdown-bullet"></span>
+                    <div className="dropdown-text">
+                      <div className="dropdown-title">OP REGISTRATION</div>
+                      <div className="dropdown-desc">Footfall, Doctor Loads &amp; Patient Types</div>
                     </div>
                   </button>
                 )}
@@ -382,8 +399,10 @@ export default function Navbar({ activeView, setActiveView, currentUser, onLogou
           box-shadow: 0 2px 4px rgba(0,0,0,0.06);
           position: sticky;
           top: 0;
-          z-index: 100;
+          z-index: 1000;
+          overflow: visible !important;
         }
+
         .navbar-top {
           display: flex;
           justify-content: space-between;
@@ -391,12 +410,14 @@ export default function Navbar({ activeView, setActiveView, currentUser, onLogou
           padding: 12px 24px;
           border-bottom: 1px solid #f1f5f9;
         }
+
         .navbar-brand {
           display: flex;
           align-items: center;
           gap: 14px;
           cursor: pointer;
         }
+
         .brand-logo {
           width: 42px;
           height: 42px;
@@ -407,22 +428,26 @@ export default function Navbar({ activeView, setActiveView, currentUser, onLogou
           justify-content: center;
           box-shadow: 0 2px 8px rgba(37,99,235,0.3);
         }
+
         .brand-title {
           font-size: 1.15rem;
           font-weight: 800;
           letter-spacing: -0.01em;
           color: #0f172a;
         }
+
         .brand-sub {
           font-size: 0.78rem;
           color: #64748b;
           font-weight: 500;
         }
+
         .navbar-actions {
           display: flex;
           align-items: center;
           gap: 14px;
         }
+
         .nav-pill-btn {
           display: flex;
           align-items: center;
@@ -430,18 +455,20 @@ export default function Navbar({ activeView, setActiveView, currentUser, onLogou
           background: #eff6ff;
           color: #2563eb;
           border: 1px solid #bfdbfe;
-          padding: 8px 14px;
+          padding: 8px 16px;
           border-radius: 20px;
           font-size: 0.85rem;
           font-weight: 600;
           cursor: pointer;
           transition: all 0.15s ease;
         }
+
         .nav-pill-btn:hover, .nav-pill-btn.active {
           background: #2563eb;
           color: #ffffff;
           border-color: #2563eb;
         }
+
         .user-profile-badge {
           display: flex;
           align-items: center;
@@ -451,16 +478,19 @@ export default function Navbar({ activeView, setActiveView, currentUser, onLogou
           padding: 6px 14px;
           border-radius: 24px;
         }
+
         .user-details {
           display: flex;
           flex-direction: column;
         }
+
         .user-name {
           font-size: 0.82rem;
           font-weight: 700;
           color: #0f172a;
           line-height: 1.2;
         }
+
         .logout-btn {
           background: none;
           border: none;
@@ -472,26 +502,32 @@ export default function Navbar({ activeView, setActiveView, currentUser, onLogou
           border-radius: 4px;
           transition: background 0.15s;
         }
+
         .logout-btn:hover {
           background: #fee2e2;
         }
+
         .navbar-menu-strip {
           display: flex;
           padding: 0 24px;
           background: #1e3a8a;
-          overflow-x: auto;
-        }
-        .nav-dropdown-wrapper {
+          overflow: visible !important;
           position: relative;
         }
+
+        .nav-dropdown-wrapper {
+          position: relative;
+          display: inline-block;
+        }
+
         .nav-menu-btn {
           background: transparent;
           border: none;
           color: #e0e7ff;
-          padding: 12px 18px;
+          padding: 13px 22px;
           font-weight: 700;
-          font-size: 0.9rem;
-          letter-spacing: 0.04em;
+          font-size: 0.92rem;
+          letter-spacing: 0.05em;
           display: flex;
           align-items: center;
           gap: 8px;
@@ -499,69 +535,107 @@ export default function Navbar({ activeView, setActiveView, currentUser, onLogou
           transition: all 0.15s ease;
           border-bottom: 3px solid transparent;
         }
+
         .nav-menu-btn:hover, .nav-menu-btn.active {
           background: #1d4ed8;
           color: #ffffff;
           border-bottom-color: #60a5fa;
         }
+
         .rotate {
           transform: rotate(180deg);
         }
+
         .nav-dropdown-menu {
           position: absolute;
           top: 100%;
           left: 0;
-          min-width: 320px;
+          min-width: 330px;
           background: #ffffff;
           border: 1px solid #cbd5e1;
-          border-radius: 0 0 8px 8px;
-          box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+          border-top: 3px solid #2563eb;
+          border-radius: 0 0 10px 10px;
+          box-shadow: 0 14px 32px rgba(15, 23, 42, 0.22);
           padding: 8px;
           display: flex;
           flex-direction: column;
           gap: 4px;
-          z-index: 200;
+          z-index: 99999;
           animation: slideDown 0.15s ease-out;
         }
+
         @keyframes slideDown {
-          from { opacity: 0; transform: translateY(-8px); }
+          from { opacity: 0; transform: translateY(-6px); }
           to { opacity: 1; transform: translateY(0); }
         }
+
         .dropdown-item {
           display: flex;
-          align-items: flex-start;
+          align-items: center;
           gap: 12px;
-          padding: 10px 12px;
+          padding: 10px 14px;
           background: #ffffff;
-          border: 1px solid transparent;
+          border: 1px solid #f1f5f9;
           border-radius: 6px;
           cursor: pointer;
           text-align: left;
           transition: all 0.12s ease;
           width: 100%;
         }
+
         .dropdown-item:hover {
           background: #eff6ff;
-          border-color: #bfdbfe;
+          border-color: #93c5fd;
+          transform: translateX(3px);
         }
+
         .dropdown-item.active {
           background: #dbeafe;
-          border-color: #93c5fd;
+          border-color: #60a5fa;
         }
-        .item-icon {
-          color: #2563eb;
-          margin-top: 2px;
+
+        .dropdown-bullet {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background: #2563eb;
           flex-shrink: 0;
         }
-        .item-title {
-          font-weight: 700;
-          font-size: 0.85rem;
-          color: #1e293b;
+
+        .dropdown-text {
+          flex: 1;
         }
-        .item-desc {
-          font-size: 0.75rem;
+
+        .dropdown-title {
+          font-weight: 700;
+          font-size: 0.86rem;
+          color: #0f172a;
+          letter-spacing: 0.02em;
+        }
+
+        .dropdown-desc {
+          font-size: 0.74rem;
           color: #64748b;
           margin-top: 2px;
+        }
+
+        .highlight-tariff {
+          background: #f0fdf4 !important;
+          border-color: #bbf7d0 !important;
+        }
+
+        .highlight-tariff:hover {
+          background: #dcfce7 !important;
+          border-color: #86efac !important;
+        }
+
+        .bullet-tariff {
+          background: #059669 !important;
+        }
+
+        .text-tariff {
+          color: #065f46 !important;
+          font-weight: 800 !important;
         }
       `}</style>
     </header>
