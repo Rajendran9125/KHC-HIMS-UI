@@ -170,7 +170,7 @@ export default function OpReviewPage() {
               <input 
                 type="text" 
                 className="form-control" 
-                placeholder="Enter MRN (e.g. MRN-2026-1001) or Mobile Number..."
+                placeholder="Enter MRN (e.g. MRN2026001) or Mobile Number..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 style={{ flex: 1 }}

@@ -23,7 +23,7 @@ export default function ConceptMenuGrid({ stats, currentUser }) {
   return (
     <div className="clinic-dashboard">
       {/* 1. TOP NAVIGATION GUIDE BANNER (POINTS UP TO THE BLUE BAR) */}
-      <div className="top-nav-guide-banner">
+      {/* <div className="top-nav-guide-banner">
         <div className="guide-left">
           <div className="arrow-pulse-box">
             <ArrowUp size={22} className="pulse-arrow" />
@@ -47,7 +47,7 @@ export default function ConceptMenuGrid({ stats, currentUser }) {
             </span>
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* 2. CLINIC PICTURE & HERO SHOWCASE */}
       <div className="clinic-hero-card">

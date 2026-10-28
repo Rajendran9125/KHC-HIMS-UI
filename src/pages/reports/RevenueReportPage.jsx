@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../../services/api';
-import { PieChart, TrendingUp, DollarSign, Filter, Printer, Layers } from 'lucide-react';
+import { PieChart, TrendingUp, DollarSign, Filter, Printer, Layers, RotateCcw } from 'lucide-react';
 
 export default function RevenueReportPage() {
   const [data, setData] = useState(null);
@@ -76,7 +76,7 @@ export default function RevenueReportPage() {
             <TrendingUp size={24} />
           </div>
           <div className="kpi-info">
-            <span className="kpi-label">Total Realized Revenue</span>
+            <span className="kpi-label">Total Realized Revenue (Net)</span>
             <span className="kpi-value">₹{Number(data?.totalPaid || 0).toLocaleString()}</span>
           </div>
         </div>
@@ -92,7 +92,19 @@ export default function RevenueReportPage() {
         </div>
 
         <div className="kpi-card">
-          <div className="kpi-icon" style={{ background: '#fee2e2', color: '#dc2626' }}>
+          <div className="kpi-icon" style={{ background: '#fef2f2', color: '#dc2626' }}>
+            <RotateCcw size={24} />
+          </div>
+          <div className="kpi-info">
+            <span className="kpi-label">Total Refunded</span>
+            <span className="kpi-value" style={{ color: '#dc2626' }}>
+              ₹{Number(data?.totalRefunded || 0).toLocaleString()}
+            </span>
+          </div>
+        </div>
+
+        <div className="kpi-card">
+          <div className="kpi-icon" style={{ background: '#fee2e2', color: '#b45309' }}>
             <DollarSign size={24} />
           </div>
           <div className="kpi-info">

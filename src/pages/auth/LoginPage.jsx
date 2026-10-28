@@ -1,17 +1,39 @@
 import React, { useState } from 'react';
 import { api } from '../../services/api';
-import { Building2, ShieldCheck, UserCheck, KeyRound, AlertCircle, ArrowRight, User } from 'lucide-react';
+import { KeyRound, AlertCircle, ArrowRight, User, CheckCircle2, ArrowLeft, Mail, ShieldAlert } from 'lucide-react';
 
 export default function LoginPage({ onLoginSuccess }) {
-  const [username, setUsername] = useState('admin');
-  const [password, setPassword] = useState('admin123');
+  const [mode, setMode] = useState('login'); // 'login' or 'reset'
+  
+  // Login form state
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  
+  // Reset password form state
+  const [resetUsername, setResetUsername] = useState('');
+  const [emailOrPhone, setEmailOrPhone] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [successMsg, setSuccessMsg] = useState(null);
 
   const handleLogin = async (e) => {
     e?.preventDefault();
-    setLoading(true);
     setError(null);
+    setSuccessMsg(null);
+
+    if (!username.trim()) {
+      setError('Please enter your username');
+      return;
+    }
+    if (!password) {
+      setError('Please enter your password');
+      return;
+    }
+
+    setLoading(true);
     try {
       const resp = await api.login({ username: username.trim(), password });
       onLoginSuccess(resp);
@@ -22,114 +44,255 @@ export default function LoginPage({ onLoginSuccess }) {
     }
   };
 
-  const handleQuickLogin = (u, p) => {
-    setUsername(u);
-    setPassword(p);
+  const handleResetPassword = async (e) => {
+    e?.preventDefault();
+    setError(null);
+    setSuccessMsg(null);
+
+    if (!resetUsername.trim()) {
+      setError('Please enter your username');
+      return;
+    }
+    if (!emailOrPhone.trim()) {
+      setError('Registered Email or Phone number is mandatory for identity verification');
+      return;
+    }
+    if (!newPassword) {
+      setError('Please enter your new password');
+      return;
+    }
+    if (newPassword.length < 4) {
+      setError('Password must be at least 4 characters long');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setError('New password and Confirm password do not match');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await api.resetPassword({
+        username: resetUsername.trim(),
+        newPassword: newPassword.trim(),
+        emailOrPhone: emailOrPhone.trim() || undefined,
+      });
+
+      // Reset success: switch to login mode and pre-fill username
+      setUsername(resetUsername.trim());
+      setPassword('');
+      setResetUsername('');
+      setEmailOrPhone('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setMode('login');
+      setSuccessMsg('Password updated successfully! Please sign in with your new password.');
+    } catch (err) {
+      setError(err.message || 'Failed to reset password. Please check your details.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const openResetMode = () => {
+    setError(null);
+    setSuccessMsg(null);
+    setResetUsername(username);
+    setMode('reset');
+  };
+
+  const openLoginMode = () => {
+    setError(null);
+    setSuccessMsg(null);
+    setMode('login');
   };
 
   return (
     <div className="login-wrapper">
       <div className="login-card">
-        {/* Brand Header */}
+        {/* Brand Header with Uploaded KH Clinic Logo */}
         <div className="login-brand">
-          <div className="login-logo">
-            <Building2 size={32} color="#ffffff" />
+          <div className="login-logo-wrapper">
+            <img 
+              src="/kh-clinic-logo.jpg" 
+              alt="KH CLINIC Logo" 
+              className="login-logo-img"
+            />
           </div>
-          <h1 className="login-title">KHC HEALTHCARE</h1>
-          <p className="login-subtitle">Hospital Information Management System (HIMS)</p>
+          <h1 className="login-title">KH CLINIC</h1>
+          <p className="login-subtitle">Melvisharam</p>
         </div>
 
+        {/* Success Alert */}
+        {successMsg && (
+          <div className="login-alert success">
+            <CheckCircle2 size={18} />
+            <span>{successMsg}</span>
+          </div>
+        )}
+
+        {/* Error Alert */}
         {error && (
-          <div className="login-alert">
+          <div className="login-alert error">
             <AlertCircle size={18} />
             <span>{error}</span>
           </div>
         )}
 
-        <form onSubmit={handleLogin}>
-          <div className="form-group" style={{ marginBottom: '16px' }}>
-            <label className="form-label required">Username</label>
-            <div style={{ position: 'relative' }}>
-              <input 
-                type="text" 
-                className="form-control" 
-                required 
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter username"
-                style={{ paddingLeft: '36px' }}
-              />
-              <User size={16} style={{ position: 'absolute', left: '12px', top: '12px', color: '#94a3b8' }} />
+        {/* MODE 1: LOGIN FORM */}
+        {mode === 'login' ? (
+          <form onSubmit={handleLogin} style={{ width: '100%' }}>
+            <div className="form-group" style={{ marginBottom: '18px', width: '100%' }}>
+              <label className="form-label required">Username</label>
+              <div style={{ position: 'relative', width: '100%' }}>
+                <input 
+                  type="text" 
+                  className="form-control" 
+                  required 
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="Enter username"
+                  style={{ width: '100%', boxSizing: 'border-box', paddingLeft: '38px', height: '46px', fontSize: '0.95rem' }}
+                  autoFocus
+                />
+                <User size={18} style={{ position: 'absolute', left: '12px', top: '14px', color: '#94a3b8' }} />
+              </div>
             </div>
-          </div>
 
-          <div className="form-group" style={{ marginBottom: '22px' }}>
-            <label className="form-label required">Password</label>
-            <div style={{ position: 'relative' }}>
-              <input 
-                type="password" 
-                className="form-control" 
-                required 
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter password"
-                style={{ paddingLeft: '36px' }}
-              />
-              <KeyRound size={16} style={{ position: 'absolute', left: '12px', top: '12px', color: '#94a3b8' }} />
+            <div className="form-group" style={{ marginBottom: '18px', width: '100%' }}>
+              <label className="form-label required">Password</label>
+              <div style={{ position: 'relative', width: '100%' }}>
+                <input 
+                  type="password" 
+                  className="form-control" 
+                  required 
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter password"
+                  style={{ width: '100%', boxSizing: 'border-box', paddingLeft: '38px', height: '46px', fontSize: '0.95rem' }}
+                />
+                <KeyRound size={18} style={{ position: 'absolute', left: '12px', top: '14px', color: '#94a3b8' }} />
+              </div>
             </div>
-          </div>
 
-          <button 
-            type="submit" 
-            className="btn btn-primary" 
-            style={{ width: '100%', padding: '12px', fontSize: '1rem', fontWeight: '700' }}
-            disabled={loading}
-          >
-            <span>{loading ? 'Authenticating...' : 'Sign In to HIMS Portal'}</span>
-            <ArrowRight size={18} />
-          </button>
-        </form>
+            <button 
+              type="submit" 
+              className="btn btn-primary" 
+              style={{ width: '100%', padding: '12px', fontSize: '1rem', fontWeight: '700', height: '48px', marginTop: '6px' }}
+              disabled={loading}
+            >
+              <span>{loading ? 'Authenticating...' : 'Sign In'}</span>
+              <ArrowRight size={18} />
+            </button>
 
-        {/* Quick Demo Logins for Easy Evaluation */}
-        <div className="quick-logins">
-          <span className="quick-title">Quick Demo Login Shortcuts:</span>
-          
-          <button 
-            type="button" 
-            className="quick-chip admin"
-            onClick={() => handleQuickLogin('admin', 'admin123')}
-          >
-            <ShieldCheck size={16} />
-            <div>
-              <strong>Admin Role (All Rights)</strong>
-              <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Username: <code>admin</code> | Full Master, Admin &amp; Services</div>
+            <div style={{ textAlign: 'center', marginTop: '16px' }}>
+              <button 
+                type="button" 
+                className="reset-pass-link" 
+                onClick={openResetMode}
+              >
+                <KeyRound size={14} />
+                <span>Reset Password?</span>
+              </button>
             </div>
-          </button>
-
-          <button 
-            type="button" 
-            className="quick-chip user"
-            onClick={() => handleQuickLogin('user1', 'user123')}
-          >
-            <UserCheck size={16} />
-            <div>
-              <strong>Frontdesk User (Selected Menus)</strong>
-              <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Username: <code>user1</code> | Registration &amp; Billing Only</div>
+          </form>
+        ) : (
+          /* MODE 2: RESET PASSWORD FORM */
+          <form onSubmit={handleResetPassword} className="reset-password-form" style={{ width: '100%' }}>
+            <div className="reset-header">
+              <button 
+                type="button" 
+                className="back-btn" 
+                onClick={openLoginMode}
+                title="Back to Login"
+              >
+                <ArrowLeft size={16} />
+                <span>Back to Sign In</span>
+              </button>
+              <h2 className="reset-title">Reset Password</h2>
             </div>
-          </button>
 
-          <button 
-            type="button" 
-            className="quick-chip user"
-            onClick={() => handleQuickLogin('cashier1', 'cashier123')}
-          >
-            <UserCheck size={16} />
-            <div>
-              <strong>Cashier User (Selected Menus)</strong>
-              <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Username: <code>cashier1</code> | Billing &amp; Reports Only</div>
+            <div className="form-group" style={{ marginBottom: '14px', width: '100%' }}>
+              <label className="form-label required">Username</label>
+              <div style={{ position: 'relative', width: '100%' }}>
+                <input 
+                  type="text" 
+                  className="form-control" 
+                  required 
+                  value={resetUsername}
+                  onChange={(e) => setResetUsername(e.target.value)}
+                  placeholder="Enter your username (e.g. admin)"
+                  style={{ width: '100%', boxSizing: 'border-box', paddingLeft: '38px', height: '44px' }}
+                  autoFocus
+                />
+                <User size={18} style={{ position: 'absolute', left: '12px', top: '13px', color: '#94a3b8' }} />
+              </div>
             </div>
-          </button>
-        </div>
+
+            <div className="form-group" style={{ marginBottom: '14px', width: '100%' }}>
+              <label className="form-label required">
+                <span>Registered Email or Phone Number</span>
+              </label>
+              <div style={{ position: 'relative', width: '100%' }}>
+                <input 
+                  type="text" 
+                  className="form-control" 
+                  required
+                  value={emailOrPhone}
+                  onChange={(e) => setEmailOrPhone(e.target.value)}
+                  placeholder="Enter registered email or mobile number"
+                  style={{ width: '100%', boxSizing: 'border-box', paddingLeft: '38px', height: '44px' }}
+                />
+                <Mail size={18} style={{ position: 'absolute', left: '12px', top: '13px', color: '#94a3b8' }} />
+              </div>
+              <span style={{ fontSize: '0.74rem', color: '#64748b', marginTop: '4px', display: 'block' }}>
+                * Mandatory verification: Must match the email or phone registered on this account
+              </span>
+            </div>
+
+            <div className="form-group" style={{ marginBottom: '14px', width: '100%' }}>
+              <label className="form-label required">New Password</label>
+              <div style={{ position: 'relative', width: '100%' }}>
+                <input 
+                  type="password" 
+                  className="form-control" 
+                  required 
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Enter new password"
+                  style={{ width: '100%', boxSizing: 'border-box', paddingLeft: '38px', height: '44px' }}
+                />
+                <KeyRound size={18} style={{ position: 'absolute', left: '12px', top: '13px', color: '#94a3b8' }} />
+              </div>
+            </div>
+
+            <div className="form-group" style={{ marginBottom: '20px', width: '100%' }}>
+              <label className="form-label required">Confirm New Password</label>
+              <div style={{ position: 'relative', width: '100%' }}>
+                <input 
+                  type="password" 
+                  className="form-control" 
+                  required 
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Re-enter new password"
+                  style={{ width: '100%', boxSizing: 'border-box', paddingLeft: '38px', height: '44px' }}
+                />
+                <KeyRound size={18} style={{ position: 'absolute', left: '12px', top: '13px', color: '#94a3b8' }} />
+              </div>
+            </div>
+
+            <button 
+              type="submit" 
+              className="btn btn-primary" 
+              style={{ width: '100%', padding: '12px', fontSize: '0.98rem', fontWeight: '700', height: '46px' }}
+              disabled={loading}
+            >
+              <span>{loading ? 'Updating Password...' : 'Update & Reset Password'}</span>
+              <CheckCircle2 size={18} />
+            </button>
+          </form>
+        )}
       </div>
 
       <style>{`
@@ -146,39 +309,43 @@ export default function LoginPage({ onLoginSuccess }) {
           border-radius: 16px;
           box-shadow: 0 20px 40px rgba(0,0,0,0.25);
           width: 100%;
-          max-width: 460px;
+          max-width: 440px;
           padding: 36px 32px;
         }
         .login-brand {
           text-align: center;
-          margin-bottom: 24px;
+          margin-bottom: 22px;
         }
-        .login-logo {
-          width: 56px;
-          height: 56px;
-          background: #2563eb;
-          border-radius: 12px;
+        .login-logo-wrapper {
           display: inline-flex;
           align-items: center;
           justify-content: center;
           margin-bottom: 12px;
-          box-shadow: 0 4px 12px rgba(37,99,235,0.35);
+        }
+        .login-logo-img {
+          width: 105px;
+          height: 105px;
+          object-fit: contain;
+          border-radius: 16px;
+          box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+          background: #ffffff;
+          padding: 4px;
+          border: 1px solid #e2e8f0;
         }
         .login-title {
-          font-size: 1.45rem;
+          font-size: 1.55rem;
           font-weight: 800;
           color: #0f172a;
           letter-spacing: -0.02em;
+          margin: 0;
         }
         .login-subtitle {
           font-size: 0.85rem;
           color: #64748b;
-          margin-top: 4px;
+          margin-top: 6px;
+          font-weight: 500;
         }
         .login-alert {
-          background: #fef2f2;
-          color: #991b1b;
-          border: 1px solid #fecaca;
           padding: 10px 14px;
           border-radius: 8px;
           margin-bottom: 18px;
@@ -186,45 +353,66 @@ export default function LoginPage({ onLoginSuccess }) {
           align-items: center;
           gap: 10px;
           font-size: 0.88rem;
+          line-height: 1.4;
         }
-        .quick-logins {
-          margin-top: 24px;
-          padding-top: 20px;
-          border-top: 1px solid #e2e8f0;
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
+        .login-alert.error {
+          background: #fef2f2;
+          color: #991b1b;
+          border: 1px solid #fecaca;
         }
-        .quick-title {
-          font-size: 0.78rem;
-          font-weight: 700;
-          text-transform: uppercase;
-          color: #64748b;
-          margin-bottom: 4px;
-          display: block;
+        .login-alert.success {
+          background: #ecfdf5;
+          color: #065f46;
+          border: 1px solid #a7f3d0;
         }
-        .quick-chip {
+        .reset-pass-link {
+          background: none;
+          border: none;
+          color: #2563eb;
+          font-size: 0.8rem;
+          font-weight: 600;
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          padding: 0;
+          transition: color 0.15s ease;
+        }
+        .reset-pass-link:hover {
+          color: #1d4ed8;
+          text-decoration: underline;
+        }
+        .reset-header {
           display: flex;
           align-items: center;
-          gap: 12px;
-          padding: 10px 12px;
-          background: #f8fafc;
-          border: 1px solid #cbd5e1;
-          border-radius: 8px;
-          text-align: left;
+          justify-content: space-between;
+          margin-bottom: 16px;
+          padding-bottom: 12px;
+          border-bottom: 1px solid #f1f5f9;
+        }
+        .reset-title {
+          font-size: 1.05rem;
+          font-weight: 700;
+          color: #0f172a;
+          margin: 0;
+        }
+        .back-btn {
+          background: none;
+          border: none;
+          color: #64748b;
+          font-size: 0.8rem;
+          font-weight: 600;
           cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 4px 6px;
+          border-radius: 4px;
           transition: all 0.15s ease;
         }
-        .quick-chip:hover {
-          background: #eff6ff;
-          border-color: #93c5fd;
-          transform: translateY(-1px);
-        }
-        .quick-chip.admin {
-          border-left: 4px solid #2563eb;
-        }
-        .quick-chip.user {
-          border-left: 4px solid #059669;
+        .back-btn:hover {
+          background: #f1f5f9;
+          color: #0f172a;
         }
       `}</style>
     </div>

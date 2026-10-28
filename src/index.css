@@ -239,6 +239,8 @@ button, input, select, textarea {
 }
 
 .form-control {
+  width: 100%;
+  box-sizing: border-box;
   padding: 9px 13px;
   border: 1px solid #cbd5e1;
   border-radius: 6px;

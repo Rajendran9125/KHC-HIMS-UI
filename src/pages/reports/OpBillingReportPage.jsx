@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../../services/api';
-import { FileText, Search, Printer, DollarSign, Receipt, Filter } from 'lucide-react';
+import { FileText, Search, Printer, DollarSign, Receipt, Filter, RotateCcw } from 'lucide-react';
 
 export default function OpBillingReportPage() {
   const [reportData, setReportData] = useState(null);
@@ -134,17 +134,31 @@ export default function OpBillingReportPage() {
         </div>
 
         <div className="kpi-card">
-          <div className="kpi-icon" style={{ background: '#ecfdf5', color: '#059669' }}>
-            <DollarSign size={24} />
+          <div className="kpi-icon" style={{ background: '#fef2f2', color: '#dc2626' }}>
+            <RotateCcw size={24} />
           </div>
           <div className="kpi-info">
-            <span className="kpi-label">Total Collected</span>
-            <span className="kpi-value">₹{Number(reportData?.totalPaid || 0).toLocaleString()}</span>
+            <span className="kpi-label">Total Refunded</span>
+            <span className="kpi-value" style={{ color: '#dc2626' }}>
+              ₹{Number(reportData?.totalRefunded || 0).toLocaleString()}
+            </span>
           </div>
         </div>
 
         <div className="kpi-card">
-          <div className="kpi-icon" style={{ background: '#fee2e2', color: '#dc2626' }}>
+          <div className="kpi-icon" style={{ background: '#ecfdf5', color: '#059669' }}>
+            <DollarSign size={24} />
+          </div>
+          <div className="kpi-info">
+            <span className="kpi-label">Net Collected (After Refunds)</span>
+            <span className="kpi-value" style={{ color: '#16a34a' }}>
+              ₹{Number(reportData?.totalPaid || 0).toLocaleString()}
+            </span>
+          </div>
+        </div>
+
+        <div className="kpi-card">
+          <div className="kpi-icon" style={{ background: '#fef3c7', color: '#b45309' }}>
             <DollarSign size={24} />
           </div>
           <div className="kpi-info">
@@ -164,34 +178,53 @@ export default function OpBillingReportPage() {
               <th>Patient MRN &amp; Name</th>
               <th>Doctor</th>
               <th>Payment Mode</th>
-              <th>Subtotal</th>
+              <th>Bill Total</th>
               <th>Discount</th>
-              <th>Net Total</th>
+              <th>Refunded</th>
+              <th>Net Collected</th>
               <th>Status</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan="9" style={{ textAlign: 'center', padding: '24px' }}>Loading report data...</td></tr>
+              <tr><td colSpan="10" style={{ textAlign: 'center', padding: '24px' }}>Loading report data...</td></tr>
             ) : !reportData?.bills || reportData.bills.length === 0 ? (
-              <tr><td colSpan="9" style={{ textAlign: 'center', padding: '24px' }}>No bills found matching filters.</td></tr>
+              <tr><td colSpan="10" style={{ textAlign: 'center', padding: '24px' }}>No bills found matching filters.</td></tr>
             ) : (
-              reportData.bills.map(b => (
-                <tr key={b.id}>
-                  <td><strong>{b.billNumber}</strong></td>
-                  <td>{b.billDate ? new Date(b.billDate).toLocaleString() : '—'}</td>
-                  <td>
-                    <strong>{b.patient?.firstName} {b.patient?.lastName}</strong>
-                    <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{b.patient?.mrn}</div>
-                  </td>
-                  <td>{b.doctor?.doctorName}</td>
-                  <td><span className="badge badge-primary">{b.paymentType}</span></td>
-                  <td>₹{b.subTotal}</td>
-                  <td style={{ color: '#dc2626' }}>₹{b.discount}</td>
-                  <td><strong>₹{b.totalAmount}</strong></td>
-                  <td><span className="badge badge-success">{b.paymentStatus}</span></td>
-                </tr>
-              ))
+              reportData.bills.map(b => {
+                const netAmount = Math.max(0, (b.paidAmount || b.totalAmount || 0) - (b.refundedAmount || 0));
+                const isRefunded = b.paymentStatus === 'REFUNDED';
+                const isPartial = b.paymentStatus === 'PARTIAL_REFUND';
+                return (
+                  <tr key={b.id} style={{ background: isRefunded ? '#fef2f2' : 'inherit' }}>
+                    <td><strong>{b.billNumber}</strong></td>
+                    <td>{b.billDate ? new Date(b.billDate).toLocaleString() : '—'}</td>
+                    <td>
+                      <strong>{b.patient?.firstName} {b.patient?.lastName}</strong>
+                      <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{b.patient?.mrn}</div>
+                    </td>
+                    <td>{b.doctor?.doctorName}</td>
+                    <td><span className="badge badge-primary">{b.paymentType}</span></td>
+                    <td>₹{b.totalAmount}</td>
+                    <td style={{ color: '#dc2626' }}>₹{b.discount || 0}</td>
+                    <td>
+                      {b.refundedAmount > 0 ? (
+                        <strong style={{ color: '#dc2626' }}>-₹{b.refundedAmount}</strong>
+                      ) : '—'}
+                    </td>
+                    <td>
+                      <strong style={{ color: netAmount === 0 ? '#94a3b8' : '#15803d' }}>
+                        ₹{netAmount}
+                      </strong>
+                    </td>
+                    <td>
+                      <span className={`badge ${isRefunded ? 'badge-danger' : isPartial ? 'badge-warning' : 'badge-success'}`}>
+                        {b.paymentStatus}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>

@@ -61,7 +61,7 @@ export default function Navbar({ activeView, setActiveView, currentUser, onLogou
   // Permissions check for main tabs
   const hasMasterAccess = isAdmin || isAllowed('admin') || isAllowed('users') || isAllowed('services');
   const hasRegAccess = isAdmin || ['op-new', 'op-review', 'patient-update', 'modify-doctor-reg', 'modify-patient-type', 'modify-payment-type-reg'].some(isAllowed);
-  const hasBillAccess = isAdmin || ['op-billing', 'modify-doctor-bill', 'modify-payment-type-bill'].some(isAllowed);
+  const hasBillAccess = isAdmin || ['op-billing', 'modify-doctor-bill', 'modify-payment-type-bill', 'refund-billing'].some(isAllowed);
   const hasReportAccess = isAdmin || ['report-billing', 'report-revenue', 'report-registration'].some(isAllowed);
 
   return (
@@ -69,12 +69,13 @@ export default function Navbar({ activeView, setActiveView, currentUser, onLogou
       {/* Top Header Bar */}
       <div className="navbar-top">
         <div className="navbar-brand" onClick={() => setActiveView('dashboard')}>
-          <div className="brand-logo">
-            <Building2 size={24} color="#ffffff" />
-          </div>
+          <img 
+            src="/kh-clinic-logo.jpg" 
+            alt="KH CLINIC Logo" 
+            className="navbar-brand-logo-img" 
+          />
           <div>
-            <div className="brand-title">KHC HOSPITAL INFORMATION SYSTEM</div>
-            <div className="brand-sub">HIMS Navigation &amp; Outpatient Operations Suite</div>
+            <div className="brand-title">KH CLINIC</div>
           </div>
         </div>
 
@@ -277,7 +278,7 @@ export default function Navbar({ activeView, setActiveView, currentUser, onLogou
             onMouseLeave={() => setOpenMenu(null)}
           >
             <button 
-              className={`nav-menu-btn ${['op-billing', 'modify-doctor-bill', 'modify-payment-type-bill'].includes(activeView) ? 'active' : ''}`}
+              className={`nav-menu-btn ${['op-billing', 'modify-doctor-bill', 'modify-payment-type-bill', 'refund-billing'].includes(activeView) ? 'active' : ''}`}
               onClick={() => toggleDropdown('billing')}
             >
               <Receipt size={17} />
@@ -322,6 +323,19 @@ export default function Navbar({ activeView, setActiveView, currentUser, onLogou
                     <div className="dropdown-text">
                       <div className="dropdown-title">PAYMENT TYPE MODIFY</div>
                       <div className="dropdown-desc">Cash, Card, UPI, Credit on Bill</div>
+                    </div>
+                  </button>
+                )}
+
+                {(isAdmin || isAllowed('refund-billing') || isAllowed('op-billing')) && (
+                  <button 
+                    className={`dropdown-item ${activeView === 'refund-billing' ? 'active' : ''}`}
+                    onClick={() => handleSelect('refund-billing')}
+                  >
+                    <span className="dropdown-bullet" style={{ background: '#dc2626' }}></span>
+                    <div className="dropdown-text">
+                      <div className="dropdown-title" style={{ color: '#dc2626' }}>REFUND BILLING</div>
+                      <div className="dropdown-desc">Revert Skipped Services &amp; Issue Refunds</div>
                     </div>
                   </button>
                 )}
@@ -416,6 +430,16 @@ export default function Navbar({ activeView, setActiveView, currentUser, onLogou
           align-items: center;
           gap: 14px;
           cursor: pointer;
+        }
+
+        .navbar-brand-logo-img {
+          width: 44px;
+          height: 44px;
+          object-fit: contain;
+          border-radius: 8px;
+          background: #ffffff;
+          padding: 2px;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.12);
         }
 
         .brand-logo {

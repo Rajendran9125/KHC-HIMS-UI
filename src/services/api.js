@@ -28,12 +28,14 @@ async function request(endpoint, options = {}) {
 export const api = {
   // Auth
   login: (data) => request('/auth/login', { method: 'POST', body: JSON.stringify(data) }),
+  resetPassword: (data) => request('/auth/reset-password', { method: 'POST', body: JSON.stringify(data) }),
 
   // Master: Users
   getUsers: () => request('/master/users'),
   createUser: (data) => request('/master/users', { method: 'POST', body: JSON.stringify(data) }),
   updateUser: (id, data) => request(`/master/users/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteUser: (id) => request(`/master/users/${id}`, { method: 'DELETE' }),
+  getMenus: () => request('/master/menus'),
 
   // Master: Hospital Service Tariff (Service Name, Header, Dept, OPRATE, IPRATE, Status)
   getServices: (query = '', activeOnly = false) => {
@@ -69,6 +71,8 @@ export const api = {
   createOpBill: (data) => request('/billing/op-service', { method: 'POST', body: JSON.stringify(data) }),
   modifyBillDoctor: (data) => request('/billing/modify-doctor', { method: 'PUT', body: JSON.stringify(data) }),
   modifyBillPaymentType: (data) => request('/billing/modify-payment-type', { method: 'PUT', body: JSON.stringify(data) }),
+  refundBillItem: (data) => request('/billing/refund-item', { method: 'POST', body: JSON.stringify(data) }),
+  refundFullBill: (data) => request('/billing/refund-full', { method: 'POST', body: JSON.stringify(data) }),
   getBills: (query = '') => request(`/billing/list${query ? `?query=${encodeURIComponent(query)}` : ''}`),
   getBillById: (id) => request(`/billing/${id}`),
 

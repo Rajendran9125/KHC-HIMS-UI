@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../../services/api';
-import { Receipt, Plus, Trash2, Printer, CheckCircle, Search, Layers } from 'lucide-react';
+import { Receipt, Plus, Trash2, Printer, CheckCircle, Search, Layers, RotateCcw, ArrowRight, X } from 'lucide-react';
 
-export default function OpServiceBillingPage() {
+export default function OpServiceBillingPage({ onNavigate }) {
   const [registrations, setRegistrations] = useState([]);
   const [doctors, setDoctors] = useState([]);
   const [paymentTypes, setPaymentTypes] = useState([]);
@@ -10,15 +10,16 @@ export default function OpServiceBillingPage() {
   const [selectedReg, setSelectedReg] = useState(null);
   const [createdBill, setCreatedBill] = useState(null);
 
+  const [regSearchQuery, setRegSearchQuery] = useState('');
+  const [serviceSearchQuery, setServiceSearchQuery] = useState('');
+
   const [doctorId, setDoctorId] = useState('');
   const [paymentType, setPaymentType] = useState('CASH');
   const [discount, setDiscount] = useState(0);
   const [taxPercent, setTaxPercent] = useState(5);
   const [remarks, setRemarks] = useState('');
 
-  const [items, setItems] = useState([
-    { serviceName: 'General OPD Consultation', serviceCategory: 'CONSULTATION', quantity: 1, unitPrice: 300 }
-  ]);
+  const [items, setItems] = useState([]);
 
   useEffect(() => {
     async function init() {
@@ -92,6 +93,27 @@ export default function OpServiceBillingPage() {
   const taxAmount = (subTotal - discount) > 0 ? ((subTotal - discount) * (taxPercent / 100)) : 0;
   const netTotal = Math.max(0, subTotal - discount + taxAmount);
 
+  // Search Filter 1: Active OP Tickets filter
+  const filteredRegistrations = registrations.filter(r => {
+    if (!regSearchQuery.trim()) return true;
+    const q = regSearchQuery.toLowerCase();
+    const pName = `${r.patient?.firstName || ''} ${r.patient?.lastName || ''}`.toLowerCase();
+    const mrn = (r.patient?.mrn || '').toLowerCase();
+    const opNum = (r.opNumber || '').toLowerCase();
+    const mobile = (r.patient?.mobile || '').toLowerCase();
+    const docName = (r.doctor?.doctorName || '').toLowerCase();
+    return pName.includes(q) || mrn.includes(q) || opNum.includes(q) || mobile.includes(q) || docName.includes(q);
+  });
+
+  // Search Filter 2: Tariff Services filter
+  const filteredServices = serviceMasterList.filter(s => {
+    if (!serviceSearchQuery.trim()) return true;
+    const q = serviceSearchQuery.toLowerCase();
+    return (s.serviceName || '').toLowerCase().includes(q) || 
+           (s.header || '').toLowerCase().includes(q) || 
+           (s.department || '').toLowerCase().includes(q);
+  });
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!selectedReg) {
@@ -133,18 +155,33 @@ export default function OpServiceBillingPage() {
     setSelectedReg(null);
     setDiscount(0);
     setRemarks('');
-    setItems([{ serviceName: 'General OPD Consultation', serviceCategory: 'CONSULTATION', quantity: 1, unitPrice: 300 }]);
+    setItems([]);
   };
 
   return (
     <div className="card">
       <div className="card-header">
-        <div>
-          <h2 className="card-title">
-            <Receipt size={22} color="#2563eb" />
-            <span>BILLING &gt; OP SERVICE BILLING</span>
-          </h2>
-          <p className="card-subtitle">
+        <div style={{ width: '100%' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+            <h2 className="card-title" style={{ margin: 0 }}>
+              <Receipt size={22} color="#2563eb" />
+              <span>BILLING &gt; OP SERVICE BILLING</span>
+            </h2>
+            {onNavigate && (
+              <button 
+                type="button" 
+                className="btn btn-secondary btn-sm"
+                onClick={() => onNavigate('refund-billing')}
+                style={{ borderColor: '#ef4444', color: '#dc2626', background: '#fef2f2', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '700' }}
+                title="Go to Refund Billing to revert previously billed services"
+              >
+                <RotateCcw size={14} />
+                <span>Refund / Revert Service</span>
+                <ArrowRight size={13} />
+              </button>
+            )}
+          </div>
+          <p className="card-subtitle" style={{ marginTop: '4px' }}>
             Generate itemized outpatient bill with automated OP rates populated from Service Master.
           </p>
         </div>
@@ -230,70 +267,153 @@ export default function OpServiceBillingPage() {
         <div>
           {/* Step 1: Select Registration */}
           <div style={{ background: '#eff6ff', padding: '16px', borderRadius: '8px', border: '1px solid #bfdbfe', marginBottom: '20px' }}>
-            <h3 style={{ fontSize: '0.95rem', fontWeight: '700', color: '#1e40af', marginBottom: '8px' }}>
-              Step 1: Select Active OP Registration Ticket
-            </h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <h3 style={{ fontSize: '0.95rem', fontWeight: '700', color: '#1e40af', margin: 0 }}>
+                Step 1: Select Active OP Registration Ticket
+              </h3>
+              {!selectedReg && (
+                <span style={{ fontSize: '0.78rem', fontWeight: '700', color: '#2563eb' }}>
+                  Showing {filteredRegistrations.length} of {registrations.length} tickets
+                </span>
+              )}
+            </div>
+
             {selectedReg ? (
               <div style={{ background: '#fff', padding: '12px 16px', borderRadius: '6px', border: '1px solid #93c5fd', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                   <strong>{selectedReg.opNumber}</strong> — {selectedReg.patient?.firstName} {selectedReg.patient?.lastName} ({selectedReg.patient?.mrn}) | Dr: {selectedReg.doctor?.doctorName}
                 </div>
-                <button type="button" className="btn btn-secondary btn-sm" onClick={() => setSelectedReg(null)}>
+                <button type="button" className="btn btn-secondary btn-sm" onClick={() => { setSelectedReg(null); setItems([]); }}>
                   Change OP Ticket
                 </button>
               </div>
             ) : (
-              <div style={{ maxHeight: '180px', overflowY: 'auto', background: '#fff', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>OP Ticket</th>
-                      <th>MRN</th>
-                      <th>Patient</th>
-                      <th>Doctor</th>
-                      <th>Status</th>
-                      <th>Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {registrations.map(r => (
-                      <tr key={r.id}>
-                        <td><strong>{r.opNumber}</strong></td>
-                        <td>{r.patient?.mrn}</td>
-                        <td>{r.patient?.firstName} {r.patient?.lastName}</td>
-                        <td>{r.doctor?.doctorName}</td>
-                        <td><span className={`badge ${r.status === 'BILLED' ? 'badge-success' : 'badge-warning'}`}>{r.status}</span></td>
-                        <td>
-                          <button type="button" className="btn btn-primary btn-sm" onClick={() => handleSelectReg(r)}>
-                            Bill This Patient
-                          </button>
-                        </td>
+              <div>
+                {/* Search Box for Active Tickets */}
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+                  <div style={{ position: 'relative', flex: 1 }}>
+                    <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
+                    <input 
+                      type="text" 
+                      className="form-control" 
+                      style={{ paddingLeft: '36px', height: '38px', fontSize: '0.88rem' }}
+                      placeholder="Search patient by Name, MRN, OP Ticket Number, Mobile, or Doctor..."
+                      value={regSearchQuery}
+                      onChange={(e) => setRegSearchQuery(e.target.value)}
+                    />
+                    {regSearchQuery && (
+                      <button 
+                        type="button" 
+                        onClick={() => setRegSearchQuery('')}
+                        style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}
+                      >
+                        <X size={15} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div style={{ maxHeight: '200px', overflowY: 'auto', background: '#fff', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>OP Ticket</th>
+                        <th>MRN</th>
+                        <th>Patient</th>
+                        <th>Doctor</th>
+                        <th>Status</th>
+                        <th>Action</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {filteredRegistrations.length > 0 ? (
+                        filteredRegistrations.map(r => (
+                          <tr key={r.id}>
+                            <td><strong>{r.opNumber}</strong></td>
+                            <td><span className="badge badge-primary">{r.patient?.mrn}</span></td>
+                            <td>{r.patient?.firstName} {r.patient?.lastName}</td>
+                            <td>{r.doctor?.doctorName}</td>
+                            <td><span className={`badge ${r.status === 'BILLED' ? 'badge-success' : 'badge-warning'}`}>{r.status}</span></td>
+                            <td>
+                              <button type="button" className="btn btn-primary btn-sm" onClick={() => handleSelectReg(r)}>
+                                Bill This Patient
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan="6" style={{ textAlign: 'center', padding: '16px', color: '#94a3b8' }}>
+                            {regSearchQuery ? `No active tickets match "${regSearchQuery}"` : 'No active OP registration tickets available.'}
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )}
           </div>
 
-          {/* Service Master Quick Presets */}
-          <div style={{ marginBottom: '20px' }}>
-            <span style={{ fontSize: '0.8rem', fontWeight: '700', color: '#475569', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
-              <Layers size={14} color="#2563eb" />
-              <span>Quick Add from Service Master (Configured OP Rates):</span>
-            </span>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-              {serviceMasterList.slice(0, 10).map((s) => (
+          {!selectedReg ? (
+            <div style={{ textAlign: 'center', padding: '36px 16px', background: '#f8fafc', borderRadius: '8px', border: '1px dashed #cbd5e1', marginBottom: '20px' }}>
+              <Receipt size={40} color="#94a3b8" style={{ marginBottom: '8px' }} />
+              <h4 style={{ fontSize: '1.05rem', fontWeight: '700', color: '#334155', margin: '0 0 6px 0' }}>
+                No Patient Selected for Billing
+              </h4>
+              <p style={{ fontSize: '0.85rem', color: '#64748b', margin: 0 }}>
+                Please click the blue <strong>"Bill This Patient"</strong> button in Step 1 above to load the patient ticket and prepare the bill.
+              </p>
+            </div>
+          ) : (
+            <>
+              {/* Service Master Quick Presets & Service Search */}
+          <div style={{ marginBottom: '20px', background: '#f8fafc', padding: '14px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginBottom: '10px' }}>
+              <span style={{ fontSize: '0.8rem', fontWeight: '700', color: '#475569', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Layers size={14} color="#2563eb" />
+                <span>Quick Add from Service Master ({filteredServices.length} configured rates):</span>
+              </span>
+              <div style={{ position: 'relative', width: '280px' }}>
+                <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
+                <input 
+                  type="text"
+                  className="form-control form-control-sm"
+                  style={{ paddingLeft: '30px', height: '32px', fontSize: '0.82rem' }}
+                  placeholder="Filter services (e.g. ECG, CBC, X-Ray)..."
+                  value={serviceSearchQuery}
+                  onChange={(e) => setServiceSearchQuery(e.target.value)}
+                />
+                {serviceSearchQuery && (
+                  <button 
+                    type="button" 
+                    onClick={() => setServiceSearchQuery('')}
+                    style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}
+                  >
+                    <X size={13} />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', maxHeight: '130px', overflowY: 'auto' }}>
+              {filteredServices.slice(0, 16).map((s) => (
                 <button
                   key={s.id}
                   type="button"
                   className="btn btn-secondary btn-sm"
                   onClick={() => handleAddPresetService(s)}
                   title={`Category: ${s.header} | Department: ${s.department}`}
+                  style={{ fontSize: '0.82rem', padding: '5px 10px' }}
                 >
-                  <Plus size={12} /> {s.serviceName} (₹{s.opRate})
+                  <Plus size={12} /> {s.serviceName} <strong>(₹{s.opRate})</strong>
                 </button>
               ))}
+              {filteredServices.length === 0 && (
+                <div style={{ color: '#94a3b8', fontSize: '0.85rem', padding: '6px' }}>
+                  No matching services found for "{serviceSearchQuery}".
+                </div>
+              )}
             </div>
           </div>
 
@@ -370,14 +490,24 @@ export default function OpServiceBillingPage() {
                           <strong>₹{((parseFloat(item.unitPrice) || 0) * (parseInt(item.quantity) || 1)).toLocaleString()}</strong>
                         </td>
                         <td>
-                          {items.length > 1 && (
-                            <button type="button" className="btn btn-danger btn-sm" onClick={() => handleRemoveItem(idx)}>
-                              <Trash2 size={14} />
-                            </button>
-                          )}
+                          <button 
+                            type="button" 
+                            className="btn btn-danger btn-sm" 
+                            onClick={() => handleRemoveItem(idx)}
+                            title="Remove / skip this service"
+                          >
+                            <Trash2 size={14} />
+                          </button>
                         </td>
                       </tr>
                     ))}
+                    {items.length === 0 && (
+                      <tr>
+                        <td colSpan="6" style={{ textAlign: 'center', padding: '24px', color: '#94a3b8' }}>
+                          No services added yet. Click <strong>"+ Add Line Item"</strong> or choose from the Service Master buttons above.
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -458,6 +588,8 @@ export default function OpServiceBillingPage() {
               </button>
             </div>
           </form>
+          </>
+        )}
         </div>
       )}
     </div>

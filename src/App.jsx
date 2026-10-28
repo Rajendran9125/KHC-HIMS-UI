@@ -20,6 +20,7 @@ import ModifyPaymentTypeRegPage from './pages/registration/ModifyPaymentTypeRegP
 import OpServiceBillingPage from './pages/billing/OpServiceBillingPage';
 import ModifyDoctorBillPage from './pages/billing/ModifyDoctorBillPage';
 import ModifyPaymentTypeBillPage from './pages/billing/ModifyPaymentTypeBillPage';
+import RefundBillingPage from './pages/billing/RefundBillingPage';
 
 // Report Pages
 import OpBillingReportPage from './pages/reports/OpBillingReportPage';
@@ -130,11 +131,13 @@ export default function App() {
 
       // Billing
       case 'op-billing':
-        return <OpServiceBillingPage />;
+        return <OpServiceBillingPage onNavigate={setActiveView} />;
       case 'modify-doctor-bill':
         return <ModifyDoctorBillPage />;
       case 'modify-payment-type-bill':
         return <ModifyPaymentTypeBillPage />;
+      case 'refund-billing':
+        return <RefundBillingPage onNavigate={setActiveView} />;
 
       // Reports
       case 'report-billing':

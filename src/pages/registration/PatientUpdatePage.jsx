@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { api } from '../../services/api';
 import { UserCog, Search, CheckCircle, Save } from 'lucide-react';
+import DobDatePicker from '../../components/DobDatePicker';
 
 export default function PatientUpdatePage() {
   const [query, setQuery] = useState('');
@@ -13,6 +14,7 @@ export default function PatientUpdatePage() {
     id: null,
     firstName: '',
     lastName: '',
+    dob: '',
     age: '',
     gender: 'MALE',
     mobile: '',
@@ -21,6 +23,37 @@ export default function PatientUpdatePage() {
     bloodGroup: '',
     emergencyContact: '',
   });
+
+  const calculateAgeFromDob = (dobString) => {
+    if (!dobString) return '';
+    const parts = dobString.split('-');
+    if (parts.length !== 3) return '';
+    const birthYear = parseInt(parts[0], 10);
+    const birthMonth = parseInt(parts[1], 10) - 1;
+    const birthDay = parseInt(parts[2], 10);
+    if (isNaN(birthYear) || isNaN(birthMonth) || isNaN(birthDay)) return '';
+
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const currentMonth = today.getMonth();
+    const currentDay = today.getDate();
+
+    let age = currentYear - birthYear;
+    if (currentMonth < birthMonth || (currentMonth === birthMonth && currentDay < birthDay)) {
+      age--;
+    }
+    return age >= 0 ? age : 0;
+  };
+
+  const handleDobChange = (e) => {
+    const dobVal = e.target.value;
+    const computedAge = calculateAgeFromDob(dobVal);
+    setForm(prev => ({
+      ...prev,
+      dob: dobVal,
+      age: computedAge !== '' ? computedAge : prev.age,
+    }));
+  };
 
   const handleSearch = async (e) => {
     e?.preventDefault();
@@ -43,6 +76,7 @@ export default function PatientUpdatePage() {
       id: p.id,
       firstName: p.firstName || '',
       lastName: p.lastName || '',
+      dob: p.dob || '',
       age: p.age || '',
       gender: p.gender || 'MALE',
       mobile: p.mobile || '',
@@ -60,6 +94,7 @@ export default function PatientUpdatePage() {
     try {
       const payload = {
         ...form,
+        dob: form.dob || null,
         age: parseInt(form.age) || 0,
       };
       await api.updatePatient(payload);
@@ -171,6 +206,21 @@ export default function PatientUpdatePage() {
                 className="form-control" 
                 value={form.lastName}
                 onChange={(e) => setForm({...form, lastName: e.target.value})}
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Date of Birth (DOB)</label>
+              <DobDatePicker 
+                value={form.dob}
+                onChange={(dobVal) => {
+                  const computedAge = calculateAgeFromDob(dobVal);
+                  setForm(prev => ({
+                    ...prev,
+                    dob: dobVal,
+                    age: computedAge !== '' ? computedAge : prev.age
+                  }));
+                }}
               />
             </div>
 

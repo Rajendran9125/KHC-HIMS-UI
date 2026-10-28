@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../../services/api';
 import { UserPlus, Printer, CheckCircle, Search, User } from 'lucide-react';
+import DobDatePicker from '../../components/DobDatePicker';
 
 export default function OpNewPage({ onRegistrationSuccess }) {
   const [doctors, setDoctors] = useState([]);
@@ -11,6 +12,7 @@ export default function OpNewPage({ onRegistrationSuccess }) {
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
+    dob: '',
     age: '',
     gender: 'MALE',
     mobile: '',
@@ -58,6 +60,37 @@ export default function OpNewPage({ onRegistrationSuccess }) {
     init();
   }, []);
 
+  const calculateAgeFromDob = (dobString) => {
+    if (!dobString) return '';
+    const parts = dobString.split('-');
+    if (parts.length !== 3) return '';
+    const birthYear = parseInt(parts[0], 10);
+    const birthMonth = parseInt(parts[1], 10) - 1;
+    const birthDay = parseInt(parts[2], 10);
+    if (isNaN(birthYear) || isNaN(birthMonth) || isNaN(birthDay)) return '';
+
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const currentMonth = today.getMonth();
+    const currentDay = today.getDate();
+
+    let age = currentYear - birthYear;
+    if (currentMonth < birthMonth || (currentMonth === birthMonth && currentDay < birthDay)) {
+      age--;
+    }
+    return age >= 0 ? age : 0;
+  };
+
+  const handleDobChange = (e) => {
+    const dobVal = e.target.value;
+    const computedAge = calculateAgeFromDob(dobVal);
+    setFormData(prev => ({
+      ...prev,
+      dob: dobVal,
+      age: computedAge !== '' ? computedAge : prev.age,
+    }));
+  };
+
   const handleDoctorChange = (e) => {
     const docId = parseInt(e.target.value);
     const selected = doctors.find(d => d.id === docId);
@@ -75,6 +108,7 @@ export default function OpNewPage({ onRegistrationSuccess }) {
     try {
       const payload = {
         ...formData,
+        dob: formData.dob || null,
         age: parseInt(formData.age) || 0,
         consultationFee: parseFloat(formData.consultationFee) || 0,
       };
@@ -93,6 +127,7 @@ export default function OpNewPage({ onRegistrationSuccess }) {
     setFormData({
       firstName: '',
       lastName: '',
+      dob: '',
       age: '',
       gender: 'MALE',
       mobile: '',
@@ -144,7 +179,7 @@ export default function OpNewPage({ onRegistrationSuccess }) {
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px', marginBottom: '10px' }}>
               <span style={{ color: '#64748b' }}>Patient Name:</span>
-              <strong>{createdOp.patient?.firstName} {createdOp.patient?.lastName} ({createdOp.patient?.age}y / {createdOp.patient?.gender})</strong>
+              <strong>{createdOp.patient?.firstName} {createdOp.patient?.lastName} ({createdOp.patient?.age}y{createdOp.patient?.dob ? ` | DOB: ${createdOp.patient?.dob}` : ''} / {createdOp.patient?.gender})</strong>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px', marginBottom: '10px' }}>
               <span style={{ color: '#64748b' }}>Consulting Doctor:</span>
@@ -196,6 +231,21 @@ export default function OpNewPage({ onRegistrationSuccess }) {
                 value={formData.lastName}
                 onChange={(e) => setFormData({...formData, lastName: e.target.value})}
                 placeholder="e.g. Rao"
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Date of Birth (DOB)</label>
+              <DobDatePicker 
+                value={formData.dob}
+                onChange={(dobVal) => {
+                  const computedAge = calculateAgeFromDob(dobVal);
+                  setFormData(prev => ({
+                    ...prev,
+                    dob: dobVal,
+                    age: computedAge !== '' ? computedAge : prev.age
+                  }));
+                }}
               />
             </div>
 
