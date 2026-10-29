@@ -1,29 +1,37 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../../services/api';
-import { UserPlus, Printer, CheckCircle, Search, User } from 'lucide-react';
+import { UserPlus, Printer, CheckCircle, Search, User, MapPin } from 'lucide-react';
 import DobDatePicker from '../../components/DobDatePicker';
 
 export default function OpNewPage({ onRegistrationSuccess }) {
   const [doctors, setDoctors] = useState([]);
   const [patientTypes, setPatientTypes] = useState([]);
   const [paymentTypes, setPaymentTypes] = useState([]);
+  const [countries, setCountries] = useState([]);
+  const [states, setStates] = useState([]);
+  const [cities, setCities] = useState([]);
   const [loadingMasters, setLoadingMasters] = useState(true);
   
+  // No default values: all dropdowns start empty and must be selected manually
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
     dob: '',
     age: '',
-    gender: 'MALE',
+    gender: '', // empty by default
     mobile: '',
     email: '',
+    countryId: '', // empty by default
+    stateId: '',   // empty by default
+    cityId: '',    // empty by default
+    pincode: '',
     address: '',
-    bloodGroup: 'B+',
+    bloodGroup: '', // empty by default
     emergencyContact: '',
-    doctorId: '',
-    patientType: 'GENERAL',
-    paymentType: 'CASH',
-    consultationFee: 300,
+    doctorId: '',   // empty by default
+    patientType: '', // empty by default
+    paymentType: '', // empty by default
+    consultationFee: 0,
     department: '',
     remarks: '',
   });
@@ -34,23 +42,21 @@ export default function OpNewPage({ onRegistrationSuccess }) {
   useEffect(() => {
     async function init() {
       try {
-        const [docs, pTypes, payTypes] = await Promise.all([
+        const [docs, pTypes, payTypes, cList, sList, ctList] = await Promise.all([
           api.getDoctors(true),
           api.getPatientTypes(),
           api.getPaymentTypes(),
+          api.getCountries(true),
+          api.getStates('', true),
+          api.getCities('', true),
         ]);
         setDoctors(docs || []);
         setPatientTypes(pTypes || []);
         setPaymentTypes(payTypes || []);
-
-        if (docs && docs.length > 0) {
-          setFormData(prev => ({
-            ...prev,
-            doctorId: docs[0].id,
-            consultationFee: docs[0].consultationFee || 300,
-            department: docs[0].department || '',
-          }));
-        }
+        setCountries(cList || []);
+        setStates(sList || []);
+        setCities(ctList || []);
+        // No defaults are assigned; user selects all manually
       } catch (err) {
         console.error(err);
       } finally {
@@ -81,29 +87,98 @@ export default function OpNewPage({ onRegistrationSuccess }) {
     return age >= 0 ? age : 0;
   };
 
-  const handleDobChange = (e) => {
-    const dobVal = e.target.value;
-    const computedAge = calculateAgeFromDob(dobVal);
+  const handleCountryChange = (e) => {
+    const cId = e.target.value ? parseInt(e.target.value) : '';
     setFormData(prev => ({
       ...prev,
-      dob: dobVal,
-      age: computedAge !== '' ? computedAge : prev.age,
+      countryId: cId,
+      stateId: '', // do not select default
+      cityId: '',  // do not select default
+      pincode: '',
+    }));
+  };
+
+  const handleStateChange = (e) => {
+    const sId = e.target.value ? parseInt(e.target.value) : '';
+    setFormData(prev => ({
+      ...prev,
+      stateId: sId,
+      cityId: '',  // do not select default
+      pincode: '',
+    }));
+  };
+
+  const handleCityChange = (e) => {
+    const val = e.target.value;
+    if (!val) {
+      setFormData(prev => ({
+        ...prev,
+        cityId: '',
+        pincode: '',
+      }));
+      return;
+    }
+    const ctId = parseInt(val);
+    const selectedCity = cities.find(c => c.id === ctId);
+    setFormData(prev => ({
+      ...prev,
+      cityId: ctId,
+      pincode: selectedCity?.defaultPincode || '',
     }));
   };
 
   const handleDoctorChange = (e) => {
-    const docId = parseInt(e.target.value);
+    const val = e.target.value;
+    if (!val) {
+      setFormData(prev => ({
+        ...prev,
+        doctorId: '',
+        department: '',
+        consultationFee: 0,
+      }));
+      return;
+    }
+    const docId = parseInt(val);
     const selected = doctors.find(d => d.id === docId);
     setFormData(prev => ({
       ...prev,
       doctorId: docId,
       department: selected?.department || '',
-      consultationFee: selected?.consultationFee || 300,
+      consultationFee: selected?.consultationFee || 0,
     }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!formData.gender) {
+      alert('Please select Gender');
+      return;
+    }
+    if (!formData.countryId) {
+      alert('Please select Country');
+      return;
+    }
+    if (!formData.stateId) {
+      alert('Please select State');
+      return;
+    }
+    if (!formData.cityId) {
+      alert('Please select City');
+      return;
+    }
+    if (!formData.doctorId) {
+      alert('Please select Consulting Doctor');
+      return;
+    }
+    if (!formData.patientType) {
+      alert('Please select Patient Type');
+      return;
+    }
+    if (!formData.paymentType) {
+      alert('Please select Payment Type');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const payload = {
@@ -111,6 +186,11 @@ export default function OpNewPage({ onRegistrationSuccess }) {
         dob: formData.dob || null,
         age: parseInt(formData.age) || 0,
         consultationFee: parseFloat(formData.consultationFee) || 0,
+        countryId: formData.countryId ? parseInt(formData.countryId) : null,
+        stateId: formData.stateId ? parseInt(formData.stateId) : null,
+        cityId: formData.cityId ? parseInt(formData.cityId) : null,
+        pincode: formData.pincode || '',
+        residentialAddress: formData.address || '',
       };
       const result = await api.registerOpNew(payload);
       setCreatedOp(result);
@@ -129,20 +209,28 @@ export default function OpNewPage({ onRegistrationSuccess }) {
       lastName: '',
       dob: '',
       age: '',
-      gender: 'MALE',
+      gender: '',
       mobile: '',
       email: '',
+      countryId: '',
+      stateId: '',
+      cityId: '',
+      pincode: '',
       address: '',
-      bloodGroup: 'B+',
+      bloodGroup: '',
       emergencyContact: '',
-      doctorId: doctors[0]?.id || '',
-      patientType: 'GENERAL',
-      paymentType: 'CASH',
-      consultationFee: doctors[0]?.consultationFee || 300,
-      department: doctors[0]?.department || '',
+      doctorId: '',
+      patientType: '',
+      paymentType: '',
+      consultationFee: 0,
+      department: '',
       remarks: '',
     });
   };
+
+  // Filtered dropdown lists for cascading state & city
+  const availableStates = states.filter(s => !formData.countryId || s.country?.id === parseInt(formData.countryId));
+  const availableCities = cities.filter(c => !formData.stateId || c.state?.id === parseInt(formData.stateId));
 
   return (
     <div className="card">
@@ -168,7 +256,7 @@ export default function OpNewPage({ onRegistrationSuccess }) {
             Medical Record Number (MRN) and OP Ticket Number have been generated.
           </p>
 
-          <div style={{ maxWidth: '480px', margin: '0 auto 28px', background: '#ffffff', border: '2px dashed #93c5fd', borderRadius: '8px', padding: '20px', textAlign: 'left' }}>
+          <div style={{ maxWidth: '520px', margin: '0 auto 28px', background: '#ffffff', border: '2px dashed #93c5fd', borderRadius: '8px', padding: '20px', textAlign: 'left' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px', marginBottom: '10px' }}>
               <span style={{ color: '#64748b' }}>OP Ticket No:</span>
               <strong style={{ color: '#2563eb', fontSize: '1.1rem' }}>{createdOp.opNumber}</strong>
@@ -181,6 +269,21 @@ export default function OpNewPage({ onRegistrationSuccess }) {
               <span style={{ color: '#64748b' }}>Patient Name:</span>
               <strong>{createdOp.patient?.firstName} {createdOp.patient?.lastName} ({createdOp.patient?.age}y{createdOp.patient?.dob ? ` | DOB: ${createdOp.patient?.dob}` : ''} / {createdOp.patient?.gender})</strong>
             </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px', marginBottom: '10px' }}>
+              <span style={{ color: '#64748b' }}>Location:</span>
+              <strong>
+                {cities.find(c => c.id === createdOp.cityId)?.cityName || 'City'}
+                {states.find(s => s.id === createdOp.stateId)?.stateName ? `, ${states.find(s => s.id === createdOp.stateId)?.stateName}` : ''}
+                {countries.find(c => c.id === createdOp.countryId)?.countryName ? `, ${countries.find(c => c.id === createdOp.countryId)?.countryName}` : ''}
+                {createdOp.pincode ? ` - ${createdOp.pincode}` : ''}
+              </strong>
+            </div>
+            {createdOp.residentialAddress && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px', marginBottom: '10px' }}>
+                <span style={{ color: '#64748b' }}>Street Address:</span>
+                <span>{createdOp.residentialAddress}</span>
+              </div>
+            )}
             <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px', marginBottom: '10px' }}>
               <span style={{ color: '#64748b' }}>Consulting Doctor:</span>
               <strong>{createdOp.doctor?.doctorName} ({createdOp.doctor?.department})</strong>
@@ -267,9 +370,11 @@ export default function OpNewPage({ onRegistrationSuccess }) {
               <label className="form-label required">Gender</label>
               <select 
                 className="form-control" 
+                required
                 value={formData.gender}
                 onChange={(e) => setFormData({...formData, gender: e.target.value})}
               >
+                <option value="">-- Select Gender --</option>
                 <option value="MALE">Male</option>
                 <option value="FEMALE">Female</option>
                 <option value="OTHER">Other</option>
@@ -306,6 +411,7 @@ export default function OpNewPage({ onRegistrationSuccess }) {
                 value={formData.bloodGroup}
                 onChange={(e) => setFormData({...formData, bloodGroup: e.target.value})}
               >
+                <option value="">-- Select Blood Group --</option>
                 <option value="A+">A+</option>
                 <option value="A-">A-</option>
                 <option value="B+">B+</option>
@@ -317,14 +423,73 @@ export default function OpNewPage({ onRegistrationSuccess }) {
               </select>
             </div>
 
+            {/* Geographic Location Hierarchy - No Defaults */}
             <div className="form-group">
-              <label className="form-label">Residential Address</label>
+              <label className="form-label required">Country</label>
+              <select
+                className="form-control"
+                required
+                value={formData.countryId}
+                onChange={handleCountryChange}
+              >
+                <option value="">-- Select Country --</option>
+                {countries.map(c => (
+                  <option key={c.id} value={c.id}>{c.countryName} ({c.countryCode || c.phoneCode})</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label required">State</label>
+              <select
+                className="form-control"
+                required
+                value={formData.stateId}
+                onChange={handleStateChange}
+                disabled={!formData.countryId}
+              >
+                <option value="">{formData.countryId ? '-- Select State --' : '-- Select Country First --'}</option>
+                {availableStates.map(s => (
+                  <option key={s.id} value={s.id}>{s.stateName} ({s.stateCode || 'State'})</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label required">City</label>
+              <select
+                className="form-control"
+                required
+                value={formData.cityId}
+                onChange={handleCityChange}
+                disabled={!formData.stateId}
+              >
+                <option value="">{formData.stateId ? '-- Select City --' : '-- Select State First --'}</option>
+                {availableCities.map(c => (
+                  <option key={c.id} value={c.id}>{c.cityName}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Pincode</label>
+              <input 
+                type="text" 
+                className="form-control" 
+                value={formData.pincode}
+                onChange={(e) => setFormData({...formData, pincode: e.target.value})}
+                placeholder="e.g. 632509"
+              />
+            </div>
+
+            <div className="form-group" style={{ gridColumn: 'span 2' }}>
+              <label className="form-label">Residential Address / Street Details</label>
               <input 
                 type="text" 
                 className="form-control" 
                 value={formData.address}
                 onChange={(e) => setFormData({...formData, address: e.target.value})}
-                placeholder="House No, Street, City"
+                placeholder="House / Flat No, Street Name, Landmark"
               />
             </div>
           </div>
@@ -342,6 +507,7 @@ export default function OpNewPage({ onRegistrationSuccess }) {
                 value={formData.doctorId}
                 onChange={handleDoctorChange}
               >
+                <option value="">-- Select Consulting Doctor --</option>
                 {doctors.map(d => (
                   <option key={d.id} value={d.id}>
                     {d.doctorName} — {d.department} ({d.specialization})
@@ -357,6 +523,7 @@ export default function OpNewPage({ onRegistrationSuccess }) {
                 className="form-control" 
                 disabled 
                 value={formData.department}
+                placeholder="Selected after doctor is chosen"
               />
             </div>
 
@@ -364,9 +531,11 @@ export default function OpNewPage({ onRegistrationSuccess }) {
               <label className="form-label required">Patient Type</label>
               <select 
                 className="form-control" 
+                required
                 value={formData.patientType}
                 onChange={(e) => setFormData({...formData, patientType: e.target.value})}
               >
+                <option value="">-- Select Patient Type --</option>
                 {patientTypes.length > 0 ? (
                   patientTypes.map(pt => (
                     <option key={pt.id} value={pt.typeName}>{pt.typeName}</option>
@@ -386,9 +555,11 @@ export default function OpNewPage({ onRegistrationSuccess }) {
               <label className="form-label required">Payment Type</label>
               <select 
                 className="form-control" 
+                required
                 value={formData.paymentType}
                 onChange={(e) => setFormData({...formData, paymentType: e.target.value})}
               >
+                <option value="">-- Select Payment Type --</option>
                 {paymentTypes.length > 0 ? (
                   paymentTypes.map(py => (
                     <option key={py.id} value={py.typeName}>{py.typeName}</option>

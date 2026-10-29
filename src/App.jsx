@@ -7,6 +7,7 @@ import LoginPage from './pages/auth/LoginPage';
 import AdminPage from './pages/master/AdminPage';
 import UserCreationPage from './pages/master/UserCreationPage';
 import ServiceMasterPage from './pages/master/ServiceMasterPage';
+import LocationMasterPage from './pages/master/LocationMasterPage';
 
 // Registration Pages
 import OpNewPage from './pages/registration/OpNewPage';
@@ -114,6 +115,8 @@ export default function App() {
         return <UserCreationPage />;
       case 'services':
         return <ServiceMasterPage />;
+      case 'location-master':
+        return <LocationMasterPage />;
 
       // Registration
       case 'op-new':

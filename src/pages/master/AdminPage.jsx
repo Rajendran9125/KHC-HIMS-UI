@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../../services/api';
-import { Stethoscope, Plus, Edit2, Search, CheckCircle2, XCircle } from 'lucide-react';
+import { Stethoscope, Plus, Edit2, Search, CheckCircle2, XCircle, Power, UserCheck, UserX } from 'lucide-react';
 
 export default function AdminPage() {
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('active'); // 'active' | 'inactive' | 'all'
   const [showModal, setShowModal] = useState(false);
   const [editingDoctor, setEditingDoctor] = useState(null);
   const [formData, setFormData] = useState({
@@ -21,7 +22,8 @@ export default function AdminPage() {
   const loadDoctors = async () => {
     try {
       setLoading(true);
-      const data = await api.getDoctors();
+      // Fetch all doctors so we can separate active and deactivated
+      const data = await api.getDoctors(false);
       setDoctors(data || []);
     } catch (err) {
       console.error(err);
@@ -77,11 +79,45 @@ export default function AdminPage() {
     }
   };
 
-  const filtered = doctors.filter(d => 
-    d.doctorName?.toLowerCase().includes(search.toLowerCase()) ||
-    d.department?.toLowerCase().includes(search.toLowerCase()) ||
-    d.specialization?.toLowerCase().includes(search.toLowerCase())
-  );
+  const handleToggleStatus = async (doctor) => {
+    const nextStatus = !doctor.isActive;
+    const actionName = nextStatus ? 'activate' : 'deactivate';
+    if (!window.confirm(`Are you sure you want to ${actionName} "${doctor.doctorName}"?`)) {
+      return;
+    }
+    try {
+      await api.updateDoctor(doctor.id, {
+        doctorName: doctor.doctorName,
+        specialization: doctor.specialization,
+        department: doctor.department,
+        consultationFee: doctor.consultationFee,
+        phone: doctor.phone,
+        roomNo: doctor.roomNo,
+        isActive: nextStatus,
+      });
+      loadDoctors();
+    } catch (err) {
+      alert('Failed to update doctor status: ' + err.message);
+    }
+  };
+
+  const activeCount = doctors.filter(d => d.isActive).length;
+  const inactiveCount = doctors.filter(d => !d.isActive).length;
+
+  const filtered = doctors.filter(d => {
+    // Filter by active/inactive tab
+    if (statusFilter === 'active' && !d.isActive) return false;
+    if (statusFilter === 'inactive' && d.isActive) return false;
+
+    // Search query
+    const q = search.toLowerCase();
+    return (
+      d.doctorName?.toLowerCase().includes(q) ||
+      d.department?.toLowerCase().includes(q) ||
+      d.specialization?.toLowerCase().includes(q) ||
+      d.roomNo?.toLowerCase().includes(q)
+    );
+  });
 
   return (
     <div className="card">
@@ -96,6 +132,71 @@ export default function AdminPage() {
         <button className="btn btn-primary" onClick={openAddModal}>
           <Plus size={16} />
           <span>Add New Doctor</span>
+        </button>
+      </div>
+
+      {/* Status Filter Tabs */}
+      <div style={{ display: 'flex', gap: '8px', borderBottom: '2px solid #e2e8f0', marginBottom: '16px', paddingBottom: '2px' }}>
+        <button
+          type="button"
+          onClick={() => setStatusFilter('active')}
+          style={{
+            padding: '8px 16px',
+            fontSize: '0.85rem',
+            fontWeight: '700',
+            border: 'none',
+            background: 'none',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            borderBottom: statusFilter === 'active' ? '3px solid #16a34a' : '3px solid transparent',
+            color: statusFilter === 'active' ? '#16a34a' : '#64748b',
+          }}
+        >
+          <CheckCircle2 size={15} />
+          <span>Active Doctors ({activeCount})</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setStatusFilter('inactive')}
+          style={{
+            padding: '8px 16px',
+            fontSize: '0.85rem',
+            fontWeight: '700',
+            border: 'none',
+            background: 'none',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            borderBottom: statusFilter === 'inactive' ? '3px solid #dc2626' : '3px solid transparent',
+            color: statusFilter === 'inactive' ? '#dc2626' : '#64748b',
+          }}
+        >
+          <XCircle size={15} />
+          <span>Deactivated Doctors ({inactiveCount})</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setStatusFilter('all')}
+          style={{
+            padding: '8px 16px',
+            fontSize: '0.85rem',
+            fontWeight: '700',
+            border: 'none',
+            background: 'none',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            borderBottom: statusFilter === 'all' ? '3px solid #2563eb' : '3px solid transparent',
+            color: statusFilter === 'all' ? '#2563eb' : '#64748b',
+          }}
+        >
+          <span>All Doctors ({doctors.length})</span>
         </button>
       </div>
 
@@ -129,12 +230,27 @@ export default function AdminPage() {
             {loading ? (
               <tr><td colSpan="9" style={{ textAlign: 'center', padding: '24px' }}>Loading doctors...</td></tr>
             ) : filtered.length === 0 ? (
-              <tr><td colSpan="9" style={{ textAlign: 'center', padding: '24px' }}>No doctors found</td></tr>
+              <tr>
+                <td colSpan="9" style={{ textAlign: 'center', padding: '28px', color: '#64748b' }}>
+                  {statusFilter === 'inactive' 
+                    ? 'No deactivated doctors found. All doctors are currently active.' 
+                    : statusFilter === 'active' 
+                      ? 'No active doctors found matching search.' 
+                      : 'No doctors found.'}
+                </td>
+              </tr>
             ) : (
               filtered.map(d => (
-                <tr key={d.id}>
+                <tr key={d.id} style={{ background: d.isActive ? '#ffffff' : '#fef2f2' }}>
                   <td><strong>#{d.id}</strong></td>
-                  <td><strong>{d.doctorName}</strong></td>
+                  <td>
+                    <strong>{d.doctorName}</strong>
+                    {!d.isActive && (
+                      <span style={{ marginLeft: '6px', fontSize: '0.75rem', color: '#dc2626', fontWeight: '600' }}>
+                        (Inactive)
+                      </span>
+                    )}
+                  </td>
                   <td>{d.specialization}</td>
                   <td><span className="badge badge-primary">{d.department}</span></td>
                   <td>{d.roomNo || '—'}</td>
@@ -144,13 +260,34 @@ export default function AdminPage() {
                     {d.isActive ? (
                       <span className="badge badge-success"><CheckCircle2 size={12} /> Active</span>
                     ) : (
-                      <span className="badge badge-danger"><XCircle size={12} /> Inactive</span>
+                      <span className="badge badge-danger"><XCircle size={12} /> Deactivated</span>
                     )}
                   </td>
                   <td>
-                    <button className="btn btn-secondary btn-sm" onClick={() => openEditModal(d)}>
-                      <Edit2 size={14} /> Edit
-                    </button>
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      <button className="btn btn-secondary btn-sm" onClick={() => openEditModal(d)} title="Edit Doctor Details & Status">
+                        <Edit2 size={14} /> Edit
+                      </button>
+                      {d.isActive ? (
+                        <button 
+                          className="btn btn-danger btn-sm" 
+                          onClick={() => handleToggleStatus(d)}
+                          title="Deactivate this doctor from OPD and billing"
+                          style={{ padding: '4px 8px', fontSize: '0.78rem' }}
+                        >
+                          <UserX size={13} /> Deactivate
+                        </button>
+                      ) : (
+                        <button 
+                          className="btn btn-success btn-sm" 
+                          onClick={() => handleToggleStatus(d)}
+                          title="Activate this doctor to enable for OPD and billing"
+                          style={{ padding: '4px 8px', fontSize: '0.78rem', background: '#16a34a', borderColor: '#16a34a', color: '#fff' }}
+                        >
+                          <UserCheck size={13} /> Activate
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))
@@ -230,6 +367,17 @@ export default function AdminPage() {
                     onChange={(e) => setFormData({...formData, phone: e.target.value})}
                     placeholder="+91 98765 43210"
                   />
+                </div>
+                <div className="form-group">
+                  <label className="form-label required">Doctor Status</label>
+                  <select 
+                    className="form-control"
+                    value={formData.isActive ? 'true' : 'false'}
+                    onChange={(e) => setFormData({...formData, isActive: e.target.value === 'true'})}
+                  >
+                    <option value="true">🟢 Active (Available for OPD &amp; Consultations)</option>
+                    <option value="false">🔴 Deactivated / Inactive (Hidden from OPD)</option>
+                  </select>
                 </div>
               </div>
 

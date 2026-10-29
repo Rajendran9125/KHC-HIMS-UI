@@ -59,7 +59,7 @@ export default function Navbar({ activeView, setActiveView, currentUser, onLogou
   };
 
   // Permissions check for main tabs
-  const hasMasterAccess = isAdmin || isAllowed('admin') || isAllowed('users') || isAllowed('services');
+  const hasMasterAccess = isAdmin || isAllowed('admin') || isAllowed('users') || isAllowed('services') || isAllowed('location-master');
   const hasRegAccess = isAdmin || ['op-new', 'op-review', 'patient-update', 'modify-doctor-reg', 'modify-patient-type', 'modify-payment-type-reg'].some(isAllowed);
   const hasBillAccess = isAdmin || ['op-billing', 'modify-doctor-bill', 'modify-payment-type-bill', 'refund-billing'].some(isAllowed);
   const hasReportAccess = isAdmin || ['report-billing', 'report-revenue', 'report-registration'].some(isAllowed);
@@ -117,7 +117,7 @@ export default function Navbar({ activeView, setActiveView, currentUser, onLogou
             onMouseLeave={() => setOpenMenu(null)}
           >
             <button 
-              className={`nav-menu-btn ${['admin', 'users', 'services'].includes(activeView) ? 'active' : ''}`}
+              className={`nav-menu-btn ${['admin', 'users', 'services', 'location-master'].includes(activeView) ? 'active' : ''}`}
               onClick={() => toggleDropdown('master')}
             >
               <ShieldCheck size={17} />
@@ -136,6 +136,19 @@ export default function Navbar({ activeView, setActiveView, currentUser, onLogou
                     <div className="dropdown-text">
                       <div className="dropdown-title">ADMIN</div>
                       <div className="dropdown-desc">Doctor Master &amp; Hospital Settings</div>
+                    </div>
+                  </button>
+                )}
+
+                {isAllowed('location-master') && (
+                  <button 
+                    className={`dropdown-item ${activeView === 'location-master' ? 'active' : ''}`}
+                    onClick={() => handleSelect('location-master')}
+                  >
+                    <span className="dropdown-bullet"></span>
+                    <div className="dropdown-text">
+                      <div className="dropdown-title">LOCATION MASTER</div>
+                      <div className="dropdown-desc">Country, State &amp; City Mapping</div>
                     </div>
                   </button>
                 )}

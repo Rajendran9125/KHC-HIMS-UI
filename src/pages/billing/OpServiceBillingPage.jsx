@@ -14,7 +14,7 @@ export default function OpServiceBillingPage({ onNavigate }) {
   const [serviceSearchQuery, setServiceSearchQuery] = useState('');
 
   const [doctorId, setDoctorId] = useState('');
-  const [paymentType, setPaymentType] = useState('CASH');
+  const [paymentType, setPaymentType] = useState('');
   const [discount, setDiscount] = useState(0);
   const [taxPercent, setTaxPercent] = useState(5);
   const [remarks, setRemarks] = useState('');
@@ -34,7 +34,6 @@ export default function OpServiceBillingPage({ onNavigate }) {
         setDoctors(docs || []);
         setPaymentTypes(payTypes || []);
         setServiceMasterList(svcs || []);
-        if (docs && docs.length > 0) setDoctorId(docs[0].id);
       } catch (err) {
         console.error(err);
       }
@@ -523,6 +522,7 @@ export default function OpServiceBillingPage({ onNavigate }) {
                   value={doctorId}
                   onChange={(e) => setDoctorId(e.target.value)}
                 >
+                  <option value="">-- Select Tagged Doctor --</option>
                   {doctors.map(d => (
                     <option key={d.id} value={d.id}>{d.doctorName} ({d.department})</option>
                   ))}
@@ -533,9 +533,11 @@ export default function OpServiceBillingPage({ onNavigate }) {
                 <label className="form-label required">Payment Type</label>
                 <select 
                   className="form-control" 
+                  required
                   value={paymentType}
                   onChange={(e) => setPaymentType(e.target.value)}
                 >
+                  <option value="">-- Select Payment Type --</option>
                   {paymentTypes.length > 0 ? (
                     paymentTypes.map(py => (
                       <option key={py.id} value={py.typeName}>{py.typeName}</option>

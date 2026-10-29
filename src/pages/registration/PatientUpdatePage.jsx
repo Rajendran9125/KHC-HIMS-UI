@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { api } from '../../services/api';
 import { UserCog, Search, CheckCircle, Save } from 'lucide-react';
 import DobDatePicker from '../../components/DobDatePicker';
@@ -10,6 +10,10 @@ export default function PatientUpdatePage() {
   const [isSearching, setIsSearching] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
 
+  const [countries, setCountries] = useState([]);
+  const [states, setStates] = useState([]);
+  const [cities, setCities] = useState([]);
+
   const [form, setForm] = useState({
     id: null,
     firstName: '',
@@ -19,10 +23,32 @@ export default function PatientUpdatePage() {
     gender: 'MALE',
     mobile: '',
     email: '',
+    countryId: '',
+    stateId: '',
+    cityId: '',
+    pincode: '',
     address: '',
     bloodGroup: '',
     emergencyContact: '',
   });
+
+  useEffect(() => {
+    async function loadLocations() {
+      try {
+        const [cList, sList, ctList] = await Promise.all([
+          api.getCountries(false),
+          api.getStates('', false),
+          api.getCities('', false),
+        ]);
+        setCountries(cList || []);
+        setStates(sList || []);
+        setCities(ctList || []);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    loadLocations();
+  }, []);
 
   const calculateAgeFromDob = (dobString) => {
     if (!dobString) return '';
@@ -81,12 +107,56 @@ export default function PatientUpdatePage() {
       gender: p.gender || 'MALE',
       mobile: p.mobile || '',
       email: p.email || '',
+      countryId: p.countryId || '',
+      stateId: p.stateId || '',
+      cityId: p.cityId || '',
+      pincode: p.pincode || '',
       address: p.address || '',
       bloodGroup: p.bloodGroup || 'B+',
       emergencyContact: p.emergencyContact || '',
     });
     setResults([]);
     setSavedSuccess(false);
+  };
+
+  const handleCountryChange = (e) => {
+    const cId = parseInt(e.target.value) || '';
+    const matchedStates = states.filter(s => s.country?.id === cId);
+    const firstState = matchedStates[0] || null;
+    const matchedCities = firstState ? cities.filter(c => c.state?.id === firstState.id) : [];
+    const firstCity = matchedCities[0] || null;
+
+    setForm(prev => ({
+      ...prev,
+      countryId: cId,
+      stateId: firstState ? firstState.id : '',
+      cityId: firstCity ? firstCity.id : '',
+      pincode: firstCity?.defaultPincode || '',
+    }));
+  };
+
+  const handleStateChange = (e) => {
+    const sId = parseInt(e.target.value) || '';
+    const matchedCities = cities.filter(c => c.state?.id === sId);
+    const firstCity = matchedCities[0] || null;
+
+    setForm(prev => ({
+      ...prev,
+      stateId: sId,
+      cityId: firstCity ? firstCity.id : '',
+      pincode: firstCity?.defaultPincode || '',
+    }));
+  };
+
+  const handleCityChange = (e) => {
+    const ctId = parseInt(e.target.value) || '';
+    const selectedCity = cities.find(c => c.id === ctId);
+
+    setForm(prev => ({
+      ...prev,
+      cityId: ctId,
+      pincode: selectedCity?.defaultPincode || prev.pincode,
+    }));
   };
 
   const handleSave = async (e) => {
@@ -96,6 +166,9 @@ export default function PatientUpdatePage() {
         ...form,
         dob: form.dob || null,
         age: parseInt(form.age) || 0,
+        countryId: form.countryId ? parseInt(form.countryId) : null,
+        stateId: form.stateId ? parseInt(form.stateId) : null,
+        cityId: form.cityId ? parseInt(form.cityId) : null,
       };
       await api.updatePatient(payload);
       setSavedSuccess(true);
@@ -103,6 +176,9 @@ export default function PatientUpdatePage() {
       alert('Error updating patient: ' + err.message);
     }
   };
+
+  const availableStates = states.filter(s => !form.countryId || s.country?.id === parseInt(form.countryId));
+  const availableCities = cities.filter(c => !form.stateId || c.state?.id === parseInt(form.stateId));
 
   return (
     <div className="card">
@@ -134,57 +210,53 @@ export default function PatientUpdatePage() {
         </form>
 
         {results.length > 0 && (
-          <div style={{ marginTop: '16px', background: '#fff', borderRadius: '6px', border: '1px solid #cbd5e1', maxHeight: '200px', overflowY: 'auto' }}>
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>MRN</th>
-                  <th>Patient Name</th>
-                  <th>Age / Gender</th>
-                  <th>Mobile</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {results.map(p => (
-                  <tr key={p.id}>
-                    <td><strong>{p.mrn}</strong></td>
-                    <td>{p.firstName} {p.lastName}</td>
-                    <td>{p.age}y / {p.gender}</td>
-                    <td>{p.mobile}</td>
-                    <td>
-                      <button 
-                        type="button" 
-                        className="btn btn-primary btn-sm"
-                        onClick={() => handleSelect(p)}
-                      >
-                        Edit Details
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div style={{ marginTop: '16px' }}>
+            <h4 style={{ fontSize: '0.85rem', fontWeight: '700', color: '#475569', marginBottom: '8px' }}>
+              Search Results ({results.length}):
+            </h4>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {results.map(p => (
+                <div 
+                  key={p.id}
+                  onClick={() => handleSelect(p)}
+                  style={{ 
+                    padding: '10px 14px', 
+                    background: '#ffffff', 
+                    border: '1px solid #cbd5e1', 
+                    borderRadius: '6px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <div>
+                    <strong style={{ color: '#2563eb' }}>{p.mrn}</strong> — {p.firstName} {p.lastName} ({p.gender}, {p.age}y{p.dob ? ` | DOB: ${p.dob}` : ''})
+                  </div>
+                  <div style={{ color: '#64748b', fontSize: '0.85rem' }}>
+                    📱 {p.mobile} {p.address ? `| 🏠 ${p.address}` : ''}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
 
       {savedSuccess && (
-        <div style={{ padding: '14px 18px', background: '#ecfdf5', color: '#065f46', border: '1px solid #a7f3d0', borderRadius: '8px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <CheckCircle size={20} />
-          <span>Patient record successfully updated and synchronized!</span>
+        <div style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', color: '#065f46', padding: '12px 16px', borderRadius: '6px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <CheckCircle size={18} />
+          <span>Patient record updated successfully.</span>
         </div>
       )}
 
       {selectedPatient ? (
         <form onSubmit={handleSave}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <span style={{ fontSize: '0.9rem', color: '#64748b' }}>
-              Editing MRN: <strong style={{ color: '#2563eb' }}>{selectedPatient.mrn}</strong>
-            </span>
-            <button type="button" className="btn btn-secondary btn-sm" onClick={() => setSelectedPatient(null)}>
-              Select Another Patient
-            </button>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '10px', marginBottom: '20px' }}>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: '700', color: '#0f172a' }}>
+              Editing: {selectedPatient.firstName} {selectedPatient.lastName} ({selectedPatient.mrn})
+            </h3>
+            <span className="badge badge-primary">ID: #{selectedPatient.id}</span>
           </div>
 
           <div className="form-grid">
@@ -230,6 +302,8 @@ export default function PatientUpdatePage() {
                 type="number" 
                 className="form-control" 
                 required 
+                min="0" 
+                max="125"
                 value={form.age}
                 onChange={(e) => setForm({...form, age: e.target.value})}
               />
@@ -242,6 +316,7 @@ export default function PatientUpdatePage() {
                 value={form.gender}
                 onChange={(e) => setForm({...form, gender: e.target.value})}
               >
+                <option value="">-- Select Gender --</option>
                 <option value="MALE">Male</option>
                 <option value="FEMALE">Female</option>
                 <option value="OTHER">Other</option>
@@ -276,6 +351,7 @@ export default function PatientUpdatePage() {
                 value={form.bloodGroup}
                 onChange={(e) => setForm({...form, bloodGroup: e.target.value})}
               >
+                <option value="">-- Select Blood Group --</option>
                 <option value="A+">A+</option>
                 <option value="A-">A-</option>
                 <option value="B+">B+</option>
@@ -287,13 +363,57 @@ export default function PatientUpdatePage() {
               </select>
             </div>
 
+            {/* Country / State / City / Pincode */}
             <div className="form-group">
-              <label className="form-label">Emergency Contact Phone</label>
+              <label className="form-label">Country</label>
+              <select
+                className="form-control"
+                value={form.countryId}
+                onChange={handleCountryChange}
+              >
+                <option value="">-- Select Country --</option>
+                {countries.map(c => (
+                  <option key={c.id} value={c.id}>{c.countryName} ({c.countryCode})</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">State</label>
+              <select
+                className="form-control"
+                value={form.stateId}
+                onChange={handleStateChange}
+              >
+                <option value="">-- Select State --</option>
+                {availableStates.map(s => (
+                  <option key={s.id} value={s.id}>{s.stateName} ({s.stateCode || 'State'})</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">City</label>
+              <select
+                className="form-control"
+                value={form.cityId}
+                onChange={handleCityChange}
+              >
+                <option value="">-- Select City --</option>
+                {availableCities.map(c => (
+                  <option key={c.id} value={c.id}>{c.cityName}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Pincode</label>
               <input 
-                type="tel" 
+                type="text" 
                 className="form-control" 
-                value={form.emergencyContact}
-                onChange={(e) => setForm({...form, emergencyContact: e.target.value})}
+                value={form.pincode}
+                onChange={(e) => setForm({...form, pincode: e.target.value})}
+                placeholder="e.g. 632509"
               />
             </div>
 
@@ -304,6 +424,7 @@ export default function PatientUpdatePage() {
                 className="form-control" 
                 value={form.address}
                 onChange={(e) => setForm({...form, address: e.target.value})}
+                placeholder="House / Flat No, Street, Landmark"
               />
             </div>
           </div>

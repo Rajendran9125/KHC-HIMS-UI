@@ -12,9 +12,9 @@ export default function OpReviewPage() {
 
   const [formData, setFormData] = useState({
     doctorId: '',
-    patientType: 'GENERAL',
-    paymentType: 'CASH',
-    consultationFee: 150,
+    patientType: '',
+    paymentType: '',
+    consultationFee: 0,
     department: '',
     remarks: 'Routine OP Review / Follow-up visit',
   });
@@ -24,14 +24,6 @@ export default function OpReviewPage() {
       try {
         const docs = await api.getDoctors(true);
         setDoctors(docs || []);
-        if (docs && docs.length > 0) {
-          setFormData(prev => ({
-            ...prev,
-            doctorId: docs[0].id,
-            department: docs[0].department || '',
-            consultationFee: Math.round((docs[0].consultationFee || 300) * 0.5),
-          }));
-        }
       } catch (err) {
         console.error(err);
       }
@@ -59,7 +51,17 @@ export default function OpReviewPage() {
   };
 
   const handleDoctorChange = (e) => {
-    const docId = parseInt(e.target.value);
+    const val = e.target.value;
+    if (!val) {
+      setFormData(prev => ({
+        ...prev,
+        doctorId: '',
+        department: '',
+        consultationFee: 0,
+      }));
+      return;
+    }
+    const docId = parseInt(val);
     const selected = doctors.find(d => d.id === docId);
     setFormData(prev => ({
       ...prev,
@@ -73,6 +75,18 @@ export default function OpReviewPage() {
     e.preventDefault();
     if (!selectedPatient) {
       alert('Please select an existing patient first.');
+      return;
+    }
+    if (!formData.doctorId) {
+      alert('Please select Consulting Doctor');
+      return;
+    }
+    if (!formData.patientType) {
+      alert('Please select Patient Type');
+      return;
+    }
+    if (!formData.paymentType) {
+      alert('Please select Payment Type');
       return;
     }
     try {
@@ -241,6 +255,7 @@ export default function OpReviewPage() {
                     value={formData.doctorId}
                     onChange={handleDoctorChange}
                   >
+                    <option value="">-- Select Consulting Doctor --</option>
                     {doctors.map(d => (
                       <option key={d.id} value={d.id}>
                         {d.doctorName} — {d.department}
@@ -253,9 +268,11 @@ export default function OpReviewPage() {
                   <label className="form-label required">Patient Type</label>
                   <select 
                     className="form-control" 
+                    required
                     value={formData.patientType}
                     onChange={(e) => setFormData({...formData, patientType: e.target.value})}
                   >
+                    <option value="">-- Select Patient Type --</option>
                     <option value="GENERAL">GENERAL</option>
                     <option value="VIP">VIP</option>
                     <option value="INSURANCE">INSURANCE</option>
@@ -267,9 +284,11 @@ export default function OpReviewPage() {
                   <label className="form-label required">Payment Type</label>
                   <select 
                     className="form-control" 
+                    required
                     value={formData.paymentType}
                     onChange={(e) => setFormData({...formData, paymentType: e.target.value})}
                   >
+                    <option value="">-- Select Payment Type --</option>
                     <option value="CASH">CASH</option>
                     <option value="UPI">UPI</option>
                     <option value="CARD">CARD</option>

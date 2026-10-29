@@ -52,6 +52,30 @@ export const api = {
   createDoctor: (data) => request('/master/doctors', { method: 'POST', body: JSON.stringify(data) }),
   updateDoctor: (id, data) => request(`/master/doctors/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
 
+  // Master: Location (Country / State / City)
+  getCountries: (activeOnly = false) => request(`/master/countries?activeOnly=${activeOnly}`),
+  createCountry: (data) => request('/master/countries', { method: 'POST', body: JSON.stringify(data) }),
+  updateCountry: (id, data) => request(`/master/countries/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteCountry: (id) => request(`/master/countries/${id}`, { method: 'DELETE' }),
+
+  getStates: (countryId = '', activeOnly = false) => {
+    let url = `/master/states?activeOnly=${activeOnly}`;
+    if (countryId) url += `&countryId=${countryId}`;
+    return request(url);
+  },
+  createState: (data) => request('/master/states', { method: 'POST', body: JSON.stringify(data) }),
+  updateState: (id, data) => request(`/master/states/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteState: (id) => request(`/master/states/${id}`, { method: 'DELETE' }),
+
+  getCities: (stateId = '', activeOnly = false) => {
+    let url = `/master/cities?activeOnly=${activeOnly}`;
+    if (stateId) url += `&stateId=${stateId}`;
+    return request(url);
+  },
+  createCity: (data) => request('/master/cities', { method: 'POST', body: JSON.stringify(data) }),
+  updateCity: (id, data) => request(`/master/cities/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteCity: (id) => request(`/master/cities/${id}`, { method: 'DELETE' }),
+
   // Master: Types & Stats
   getPatientTypes: () => request('/master/patient-types'),
   getPaymentTypes: () => request('/master/payment-types'),
