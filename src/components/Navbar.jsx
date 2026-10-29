@@ -70,12 +70,13 @@ export default function Navbar({ activeView, setActiveView, currentUser, onLogou
       <div className="navbar-top">
         <div className="navbar-brand" onClick={() => setActiveView('dashboard')}>
           <img 
-            src="/kh-clinic-logo.jpg" 
+            src="/KH Logo.jpeg" 
             alt="KH CLINIC Logo" 
             className="navbar-brand-logo-img" 
           />
           <div>
             <div className="brand-title">KH CLINIC</div>
+            {/* <div className="brand1-title"><center>Melvisharam</center></div> */}
           </div>
         </div>
 
@@ -136,19 +137,6 @@ export default function Navbar({ activeView, setActiveView, currentUser, onLogou
                     <div className="dropdown-text">
                       <div className="dropdown-title">ADMIN</div>
                       <div className="dropdown-desc">Doctor Master &amp; Hospital Settings</div>
-                    </div>
-                  </button>
-                )}
-
-                {isAllowed('location-master') && (
-                  <button 
-                    className={`dropdown-item ${activeView === 'location-master' ? 'active' : ''}`}
-                    onClick={() => handleSelect('location-master')}
-                  >
-                    <span className="dropdown-bullet"></span>
-                    <div className="dropdown-text">
-                      <div className="dropdown-title">LOCATION MASTER</div>
-                      <div className="dropdown-desc">Country, State &amp; City Mapping</div>
                     </div>
                   </button>
                 )}
@@ -446,8 +434,8 @@ export default function Navbar({ activeView, setActiveView, currentUser, onLogou
         }
 
         .navbar-brand-logo-img {
-          width: 44px;
-          height: 44px;
+          width: 75px;
+          height: 75px;
           object-fit: contain;
           border-radius: 8px;
           background: #ffffff;
@@ -467,12 +455,17 @@ export default function Navbar({ activeView, setActiveView, currentUser, onLogou
         }
 
         .brand-title {
-          font-size: 1.15rem;
-          font-weight: 800;
+          font-size: 3rem;
+          font-weight: 1000;
           letter-spacing: -0.01em;
-          color: #0f172a;
+          color: #390696;
         }
-
+          .brand1-title {
+          font-size: 1rem;
+          font-weight: 500;
+          letter-spacing: -0.01em;
+          color: #390696;
+        }
         .brand-sub {
           font-size: 0.78rem;
           color: #64748b;
@@ -522,13 +515,12 @@ export default function Navbar({ activeView, setActiveView, currentUser, onLogou
         }
 
         .user-name {
-          font-size: 0.82rem;
+          font-size: 0.86rem;
           font-weight: 700;
           color: #0f172a;
           line-height: 1.2;
         }
-
-        .logout-btn {
+         .logout-btn {
           background: none;
           border: none;
           color: #ef4444;
