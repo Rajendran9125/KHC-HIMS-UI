@@ -53,7 +53,8 @@ export default function ConceptMenuGrid({ stats, currentUser }) {
       <div className="clinic-hero-card">
         <div className="clinic-hero-media">
           <img 
-            src="/clinic-hero.jpg" 
+            // src="/clinic-hero.jpg"
+             src="/Apollo-KH.JPG"
             alt="KHC Multi-Speciality Clinic Reception" 
             className="clinic-photo"
             onError={(e) => {
@@ -61,9 +62,9 @@ export default function ConceptMenuGrid({ stats, currentUser }) {
               e.currentTarget.src = "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=1200&q=80";
             }}
           />
-          <div className="clinic-photo-gradient"></div>
+          {/* <div className="clinic-photo-gradient"></div> */}
           
-          <div className="clinic-hero-content">
+          {/* <div className="clinic-hero-content">
             <div className="hospital-brand-pill">
               <Building2 size={16} />
               <span>KHC MULTI-SPECIALITY CLINIC &amp; HOSPITAL</span>
@@ -91,7 +92,7 @@ export default function ConceptMenuGrid({ stats, currentUser }) {
                 <span>Emergency: +91 44 2800 1234</span>
               </div>
             </div>
-          </div>
+          </div> */}
         </div>
       </div>
 
@@ -287,7 +288,7 @@ export default function ConceptMenuGrid({ stats, currentUser }) {
           position: absolute;
           inset: 0;
           width: 100%;
-          height: 100%;
+          height: 120%;
           object-fit: cover;
           object-position: center;
           filter: brightness(0.65);
