@@ -120,9 +120,9 @@ export default function App() {
 
       // Registration
       case 'op-new':
-        return <OpNewPage onRegistrationSuccess={loadStats} />;
+        return <OpNewPage onRegistrationSuccess={loadStats} currentUser={currentUser} />;
       case 'op-review':
-        return <OpReviewPage />;
+        return <OpReviewPage currentUser={currentUser} />;
       case 'patient-update':
         return <PatientUpdatePage />;
       case 'modify-doctor-reg':
@@ -134,7 +134,7 @@ export default function App() {
 
       // Billing
       case 'op-billing':
-        return <OpServiceBillingPage onNavigate={setActiveView} />;
+        return <OpServiceBillingPage onNavigate={setActiveView} currentUser={currentUser} />;
       case 'modify-doctor-bill':
         return <ModifyDoctorBillPage />;
       case 'modify-payment-type-bill':
@@ -169,7 +169,7 @@ export default function App() {
       <main className="main-content">
         {/* Breadcrumb Navigation when viewing a sub-screen */}
         {activeView !== 'dashboard' && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', fontSize: '0.85rem', color: '#64748b' }}>
+          <div className="no-print" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', fontSize: '0.85rem', color: '#64748b' }}>
             <button 
               onClick={() => setActiveView('dashboard')}
               style={{ background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer', fontWeight: '600' }}
@@ -186,7 +186,7 @@ export default function App() {
         {renderCurrentView()}
       </main>
 
-      <footer style={{ background: '#ffffff', borderTop: '1px solid #e2e8f0', padding: '16px 24px', textAlign: 'center', fontSize: '0.82rem', color: '#64748b' }}>
+      <footer className="no-print" style={{ background: '#ffffff', borderTop: '1px solid #e2e8f0', padding: '16px 24px', textAlign: 'center', fontSize: '0.82rem', color: '#64748b' }}>
         KHC - Hospital Information Management System &copy; {new Date().getFullYear()} &bull; Signed in as: <strong>{currentUser.username}</strong> ({currentUser.role})
       </footer>
     </div>

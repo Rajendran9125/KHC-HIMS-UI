@@ -494,3 +494,100 @@ button, input, select, textarea {
   border-top: 1px solid var(--border);
   margin-top: 20px;
 }
+
+
+/* ==============================================================================
+   A5 Print Layout & Media Query for OP Slips & Invoices
+   Standard A5 Dimensions: 148mm width x 210mm height
+   ============================================================================== */
+/* ==============================================================================
+   A5 Landscape Print Layout & Media Query for OP Slips & Invoices
+   Standard A5 Dimensions: 210mm width x 148mm height (Landscape)
+   ============================================================================== */
+@media print {
+  @page {
+    size: landscape;
+    size: A5 landscape;
+    size: 210mm 148mm;
+    margin: 4mm 6mm;
+  }
+
+  html, body, #root {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    color: #0f172a !important;
+    font-size: 8.5pt !important;
+    line-height: 1.35 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+
+  /* Completely hide all UI chrome: navbar, breadcrumbs, footers, action buttons, alert boxes */
+  header,
+  nav,
+  footer,
+  .no-print,
+  .no-print *,
+  .navbar-container,
+  .navbar-menu-strip,
+  .navbar-top,
+  .card-header,
+  .btn,
+  button,
+  .success-banner-top,
+  .app-container > footer {
+    display: none !important;
+  }
+
+  .app-container,
+  .main-content {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+    min-height: 0 !important;
+    height: auto !important;
+    border: none !important;
+  }
+
+  .card {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+    min-height: 0 !important;
+  }
+
+  .op-success-view {
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+    border: none !important;
+  }
+
+  /* A5 Printable OP Slip Container - Landscape */
+  .op-a5-print-card {
+    display: block !important;
+    width: 100% !important;
+    max-width: 198mm !important;
+    margin: 0 auto !important;
+    padding: 6mm 10mm !important;
+    background: #ffffff !important;
+    border: 1.5px solid #1e3a8a !important;
+    border-radius: 6px !important;
+    box-shadow: none !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    page-break-after: avoid !important;
+    page-break-before: avoid !important;
+  }
+
+  .op-a5-print-card * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}

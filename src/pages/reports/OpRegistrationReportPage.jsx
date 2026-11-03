@@ -195,9 +195,9 @@ export default function OpRegistrationReportPage() {
         <table className="data-table">
           <thead>
             <tr>
-              <th>OP Ticket</th>
+              <th>OP Token</th>
               <th>Date &amp; Time</th>
-              <th>MRN</th>
+              <th>Patient ID</th>
               <th>Patient Name</th>
               <th>Age/Gender</th>
               <th>Doctor</th>

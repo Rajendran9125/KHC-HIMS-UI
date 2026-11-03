@@ -70,7 +70,7 @@ export default function Navbar({ activeView, setActiveView, currentUser, onLogou
       <div className="navbar-top">
         <div className="navbar-brand" onClick={() => setActiveView('dashboard')}>
           <img 
-            src="/KH Logo.jpeg" 
+            src="/kh-clinic-logo.jpg" 
             alt="KH CLINIC Logo" 
             className="navbar-brand-logo-img" 
           />
@@ -434,8 +434,8 @@ export default function Navbar({ activeView, setActiveView, currentUser, onLogou
         }
 
         .navbar-brand-logo-img {
-          width: 75px;
-          height: 75px;
+          width: 52px;
+          height: 52px;
           object-fit: contain;
           border-radius: 8px;
           background: #ffffff;

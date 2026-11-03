@@ -1,20 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../../services/api';
-import { Stethoscope, Search, CheckCircle, Save, AlertCircle } from 'lucide-react';
+import { Stethoscope, Search, Save, AlertCircle, CheckCircle } from 'lucide-react';
 
 export default function ModifyDoctorRegPage() {
   const [registrations, setRegistrations] = useState([]);
   const [doctors, setDoctors] = useState([]);
-  const [search, setSearch] = useState('');
   const [selectedReg, setSelectedReg] = useState(null);
   const [newDoctorId, setNewDoctorId] = useState('');
-  const [reason, setReason] = useState('Patient request / Department transfer');
-  const [loading, setLoading] = useState(true);
+  const [reason, setReason] = useState('');
+  const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
 
+  useEffect(() => {
+    loadData();
+  }, []);
+
   const loadData = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
       const [regs, docs] = await Promise.all([
         api.getRegistrations(search),
         api.getDoctors(true),
@@ -28,26 +32,26 @@ export default function ModifyDoctorRegPage() {
     }
   };
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
   const handleSelectReg = (reg) => {
     setSelectedReg(reg);
-    setNewDoctorId(reg.doctor?.id || (doctors[0]?.id ?? ''));
+    setNewDoctorId(reg.doctor?.id || '');
+    setReason('');
     setMessage(null);
   };
 
   const handleSave = async (e) => {
     e.preventDefault();
-    if (!selectedReg) return;
+    if (!newDoctorId) {
+      alert('Please select a new doctor.');
+      return;
+    }
     try {
       const updated = await api.modifyRegDoctor({
         id: selectedReg.id,
         doctorId: parseInt(newDoctorId),
         reason: reason,
       });
-      setMessage({ type: 'success', text: `Doctor updated successfully for OP Ticket: ${updated.opNumber}!` });
+      setMessage({ type: 'success', text: `Doctor updated successfully for OP Token: ${updated.opNumber}!` });
       setSelectedReg(updated);
       loadData();
     } catch (err) {
@@ -63,7 +67,7 @@ export default function ModifyDoctorRegPage() {
             <Stethoscope size={22} color="#2563eb" />
             <span>REGISTRATION &gt; DOCTOR NAME MODIFY - REGISTRATION</span>
           </h2>
-          <p className="card-subtitle">Modify and reassign the consulting doctor for an active OP registration ticket.</p>
+          <p className="card-subtitle">Modify and reassign the consulting doctor for an active OP registration token.</p>
         </div>
       </div>
 
@@ -73,8 +77,8 @@ export default function ModifyDoctorRegPage() {
           borderRadius: '8px',
           marginBottom: '18px',
           backgroundColor: message.type === 'success' ? '#ecfdf5' : '#fef2f2',
-          color: message.type === 'success' ? '#065f46' : '#991b1b',
           border: `1px solid ${message.type === 'success' ? '#a7f3d0' : '#fecaca'}`,
+          color: message.type === 'success' ? '#065f46' : '#991b1b',
           display: 'flex',
           alignItems: 'center',
           gap: '8px'
@@ -88,7 +92,7 @@ export default function ModifyDoctorRegPage() {
         <div style={{ background: '#f8fafc', padding: '24px', borderRadius: '8px', border: '1px solid #cbd5e1', marginBottom: '24px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
             <div>
-              <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: '700', textTransform: 'uppercase' }}>Selected OP Ticket</span>
+              <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: '700', textTransform: 'uppercase' }}>Selected OP Token</span>
               <h3 style={{ fontSize: '1.2rem', fontWeight: '800', color: '#1e40af' }}>
                 {selectedReg.opNumber} — {selectedReg.patient?.firstName} {selectedReg.patient?.lastName} ({selectedReg.patient?.mrn})
               </h3>
@@ -153,7 +157,7 @@ export default function ModifyDoctorRegPage() {
             <input 
               type="text" 
               className="form-control" 
-              placeholder="Filter by OP Number, MRN, Patient Name..."
+              placeholder="Filter by OP Number, Patient ID, Patient Name..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               style={{ maxWidth: '400px' }}
@@ -168,7 +172,7 @@ export default function ModifyDoctorRegPage() {
               <thead>
                 <tr>
                   <th>OP Number</th>
-                  <th>MRN</th>
+                  <th>Patient ID</th>
                   <th>Patient Name</th>
                   <th>Current Doctor</th>
                   <th>Department</th>

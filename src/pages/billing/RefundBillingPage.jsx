@@ -433,7 +433,7 @@ export default function RefundBillingPage({ onNavigate }) {
                   <div>Bill No: <strong>{lastRefundReceipt.billNumber}</strong></div>
                   <div>Date: <strong>{lastRefundReceipt.refundDate}</strong></div>
                   <div>Patient: <strong>{lastRefundReceipt.patientName}</strong></div>
-                  <div>MRN: <strong>{lastRefundReceipt.mrn}</strong></div>
+                  <div>Patient Id: <strong>{lastRefundReceipt.mrn}</strong></div>
                 </div>
 
                 <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #e2e8f0', marginBottom: '14px', fontSize: '0.88rem' }}>
