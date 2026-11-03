@@ -1,14 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../../services/api';
 import { Receipt, Plus, Trash2, Printer, CheckCircle, Search, Layers, RotateCcw, ArrowRight, X } from 'lucide-react';
+import { printLandscapeSlip } from '../../utils/printSlip';
 
-export default function OpServiceBillingPage({ onNavigate }) {
+export default function OpServiceBillingPage({ onNavigate, currentUser }) {
   const [registrations, setRegistrations] = useState([]);
   const [doctors, setDoctors] = useState([]);
   const [paymentTypes, setPaymentTypes] = useState([]);
   const [serviceMasterList, setServiceMasterList] = useState([]);
   const [selectedReg, setSelectedReg] = useState(null);
   const [createdBill, setCreatedBill] = useState(null);
+
+  const loggedUserName = 
+    currentUser?.fullName || 
+    (currentUser?.firstName ? (currentUser.firstName + ' ' + (currentUser.lastName || '')).trim() : null) ||
+    currentUser?.username ||
+    (() => {
+      try {
+        const u = JSON.parse(localStorage.getItem('khc_user') || '{}');
+        return u.fullName || (u.firstName ? (u.firstName + ' ' + (u.lastName || '')).trim() : null) || u.username || 'Administrator';
+      } catch (e) {
+        return 'Administrator';
+      }
+    })();
 
   const [regSearchQuery, setRegSearchQuery] = useState('');
   const [serviceSearchQuery, setServiceSearchQuery] = useState('');
@@ -187,8 +201,8 @@ export default function OpServiceBillingPage({ onNavigate }) {
       </div>
 
       {createdBill ? (
-        <div style={{ padding: '24px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
-          <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+        <div className="op-success-view" style={{ textAlign: 'center', padding: '24px 16px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
+          <div className="no-print" style={{ textAlign: 'center', marginBottom: '22px' }}>
             <div style={{ display: 'inline-flex', padding: '12px', background: '#ecfdf5', borderRadius: '50%', color: '#059669', marginBottom: '12px' }}>
               <CheckCircle size={44} />
             </div>
@@ -198,77 +212,143 @@ export default function OpServiceBillingPage({ onNavigate }) {
             <p style={{ color: '#64748b' }}>Bill No: <strong style={{ color: '#2563eb' }}>{createdBill.billNumber}</strong></p>
           </div>
 
-          {/* Printable Invoice Card */}
-          <div style={{ maxWidth: '650px', margin: '0 auto 28px', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px solid #2563eb', paddingBottom: '12px', marginBottom: '16px' }}>
+          {/* Printable Invoice Card (A5 Landscape Format) */}
+          <div 
+            id="op-service-invoice-slip"
+            className="op-a5-print-card"
+            style={{ 
+              maxWidth: '820px', 
+              margin: '0 auto 24px', 
+              background: '#ffffff', 
+              border: '2px solid #1e3a8a', 
+              borderRadius: '8px', 
+              padding: '16px 22px', 
+              textAlign: 'left',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
+            }}
+          >
+            {/* Header: Logo on Left, Clinic & Address in Center, Bill Details on Right */}
+            <div style={{ display: 'grid', gridTemplateColumns: '80px 1fr 140px', alignItems: 'center', borderBottom: '2px solid #1e3a8a', paddingBottom: '10px', marginBottom: '12px' }}>
               <div>
-                <h4 style={{ fontWeight: '800', color: '#1e3a8a', fontSize: '1.2rem' }}>KHC HEALTHCARE HOSPITAL</h4>
-                <div style={{ fontSize: '0.8rem', color: '#64748b' }}>OPD Services &amp; Cash Receipt</div>
+                <img 
+                  src="/KH Logo.jpeg" 
+                  alt="KH Group Logo" 
+                  style={{ height: '54px', width: 'auto', objectFit: 'contain' }} 
+                />
               </div>
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontWeight: '700', color: '#0f172a' }}>{createdBill.billNumber}</div>
-                <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{new Date().toLocaleString()}</div>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '1.5rem', fontWeight: '900', color: '#1e3a8a', letterSpacing: '0.02em', lineHeight: 1.1 }}>
+                  KH CLINIC
+                </div>
+                <div style={{ fontSize: '0.74rem', color: '#475569', marginTop: '2px' }}>
+                  Melvisharam - 632509, Ranipet Dist., Tamil Nadu | Ph: 04172-266123
+                </div>
+                <div style={{ fontSize: '0.78rem', fontWeight: '800', color: '#2563eb', marginTop: '3px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                  OPD Services &amp; Cash Receipt
+                </div>
+              </div>
+              <div style={{ textAlign: 'right', fontSize: '0.78rem', color: '#475569' }}>
+                <div style={{ fontWeight: '800', color: '#1e3a8a', fontSize: '0.95rem' }}>{createdBill.billNumber}</div>
+                <div style={{ marginTop: '2px' }}>{new Date(createdBill.billDate || Date.now()).toLocaleDateString('en-GB')}</div>
+                <div>{new Date(createdBill.billDate || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}</div>
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '0.88rem', marginBottom: '18px', background: '#f8fafc', padding: '12px', borderRadius: '6px' }}>
-              <div>Patient: <strong>{createdBill.patient?.firstName} {createdBill.patient?.lastName}</strong></div>
-              <div>MRN: <strong>{createdBill.patient?.mrn}</strong></div>
-              <div>Doctor: <strong>{createdBill.doctor?.doctorName}</strong></div>
-              <div>Payment Mode: <strong className="badge badge-success">{createdBill.paymentType}</strong></div>
+            {/* Patient & Doctor Demographics (MRN replaced with Patient Id) */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '6px 20px', fontSize: '0.82rem', marginBottom: '12px', background: '#f8fafc', padding: '8px 14px', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: '#64748b', fontWeight: '600' }}>Patient:</span>
+                <strong style={{ color: '#0f172a' }}>{createdBill.patient?.firstName} {createdBill.patient?.lastName} {createdBill.patient?.age ? `(${createdBill.patient?.age}y / ${createdBill.patient?.gender || ''})` : ''}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: '#64748b', fontWeight: '600' }}>Patient Id:</span>
+                <strong style={{ color: '#0f172a', fontFamily: 'monospace', fontSize: '0.95rem' }}>{createdBill.patient?.mrn}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: '#64748b', fontWeight: '600' }}>Doctor:</span>
+                <strong style={{ color: '#0f172a' }}>{createdBill.doctor?.doctorName}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: '#64748b', fontWeight: '600' }}>Payment Mode:</span>
+                <strong className="badge badge-success">{createdBill.paymentType}</strong>
+              </div>
             </div>
 
-            <table className="data-table" style={{ marginBottom: '16px' }}>
+            {/* Service Items Table */}
+            <table className="data-table" style={{ marginBottom: '10px', fontSize: '0.82rem' }}>
               <thead>
                 <tr>
-                  <th>#</th>
+                  <th style={{ width: '40px', textAlign: 'center' }}>#</th>
                   <th>Service Item</th>
                   <th>Header / Category</th>
-                  <th>Qty</th>
-                  <th>OP Rate</th>
-                  <th>Total</th>
+                  <th style={{ textAlign: 'center' }}>Qty</th>
+                  <th style={{ textAlign: 'right' }}>OP Rate</th>
+                  <th style={{ textAlign: 'right' }}>Total</th>
                 </tr>
               </thead>
               <tbody>
                 {createdBill.items?.map((item, i) => (
                   <tr key={i}>
-                    <td>{i + 1}</td>
-                    <td>{item.serviceName}</td>
+                    <td style={{ textAlign: 'center' }}>{i + 1}</td>
+                    <td style={{ fontWeight: '600' }}>{item.serviceName}</td>
                     <td><span className="badge badge-primary">{item.serviceCategory}</span></td>
-                    <td>{item.quantity}</td>
-                    <td>₹{item.unitPrice}</td>
-                    <td><strong>₹{item.totalPrice}</strong></td>
+                    <td style={{ textAlign: 'center' }}>{item.quantity}</td>
+                    <td style={{ textAlign: 'right' }}>₹{item.unitPrice}</td>
+                    <td style={{ textAlign: 'right', fontWeight: '700' }}>₹{item.totalPrice}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
 
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px', fontSize: '0.9rem', borderTop: '1px solid #e2e8f0', paddingTop: '12px' }}>
-              <div>Subtotal: <strong>₹{createdBill.subTotal}</strong></div>
-              <div>Discount: <strong style={{ color: '#dc2626' }}>-₹{createdBill.discount}</strong></div>
-              <div>Tax: <strong>+₹{createdBill.tax}</strong></div>
-              <div style={{ fontSize: '1.2rem', fontWeight: '800', color: '#15803d', borderTop: '2px solid #2563eb', paddingTop: '6px', marginTop: '4px' }}>
-                Net Paid: ₹{createdBill.totalAmount}
+            {/* Totals & Billed By Footer */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderTop: '1px solid #e2e8f0', paddingTop: '10px', marginTop: '6px' }}>
+              <div style={{ fontSize: '0.78rem', color: '#64748b' }}>
+                <div style={{ fontStyle: 'italic', marginBottom: '8px' }}>
+                  * Computer generated invoice. Please retain this bill for pharmacy and records.
+                </div>
+                <div>
+                  Billed By: <strong style={{ color: '#0f172a' }}>{loggedUserName}</strong>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '3px', fontSize: '0.85rem' }}>
+                <div>Subtotal: <strong>₹{createdBill.subTotal}</strong></div>
+                {createdBill.discount > 0 && (
+                  <div>Discount: <strong style={{ color: '#dc2626' }}>-₹{createdBill.discount}</strong></div>
+                )}
+                {createdBill.tax > 0 && (
+                  <div>Tax: <strong>+₹{createdBill.tax}</strong></div>
+                )}
+                <div style={{ fontSize: '1.2rem', fontWeight: '800', color: '#15803d', borderTop: '2px solid #2563eb', paddingTop: '4px', marginTop: '3px' }}>
+                  Net Paid: ₹{createdBill.totalAmount}
+                </div>
               </div>
             </div>
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '14px' }}>
-            <button className="btn btn-secondary" onClick={() => window.print()}>
-              <Printer size={16} /> Print Official Invoice
+          <div className="no-print" style={{ display: 'flex', justifyContent: 'center', gap: '14px', marginTop: '18px' }}>
+            <button 
+              className="btn btn-secondary" 
+              onClick={() => printLandscapeSlip('op-service-invoice-slip', 'OP Service Invoice')}
+              style={{ padding: '9px 20px', fontWeight: '700', fontSize: '0.92rem', display: 'flex', alignItems: 'center', gap: '8px' }}
+            >
+              <Printer size={17} /> Print Invoice (A5 Landscape)
             </button>
-            <button className="btn btn-primary" onClick={handleReset}>
-              <Receipt size={16} /> Generate New Bill
+            <button 
+              className="btn btn-primary" 
+              onClick={handleReset}
+              style={{ padding: '9px 20px', fontWeight: '700', fontSize: '0.92rem', display: 'flex', alignItems: 'center', gap: '8px' }}
+            >
+              <Receipt size={17} /> Generate New Bill
             </button>
           </div>
-        </div>
-      ) : (
+        </div>) : (
         <div>
           {/* Step 1: Select Registration */}
           <div style={{ background: '#eff6ff', padding: '16px', borderRadius: '8px', border: '1px solid #bfdbfe', marginBottom: '20px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
               <h3 style={{ fontSize: '0.95rem', fontWeight: '700', color: '#1e40af', margin: 0 }}>
-                Step 1: Select Active OP Registration Ticket
+                Step 1: Select Active OP Registration Token
               </h3>
               {!selectedReg && (
                 <span style={{ fontSize: '0.78rem', fontWeight: '700', color: '#2563eb' }}>
@@ -283,7 +363,7 @@ export default function OpServiceBillingPage({ onNavigate }) {
                   <strong>{selectedReg.opNumber}</strong> — {selectedReg.patient?.firstName} {selectedReg.patient?.lastName} ({selectedReg.patient?.mrn}) | Dr: {selectedReg.doctor?.doctorName}
                 </div>
                 <button type="button" className="btn btn-secondary btn-sm" onClick={() => { setSelectedReg(null); setItems([]); }}>
-                  Change OP Ticket
+                  Change OP Token
                 </button>
               </div>
             ) : (
@@ -296,7 +376,7 @@ export default function OpServiceBillingPage({ onNavigate }) {
                       type="text" 
                       className="form-control" 
                       style={{ paddingLeft: '36px', height: '38px', fontSize: '0.88rem' }}
-                      placeholder="Search patient by Name, MRN, OP Ticket Number, Mobile, or Doctor..."
+                      placeholder="Search patient by Name, Patient ID, OP Token Number, Mobile, or Doctor..."
                       value={regSearchQuery}
                       onChange={(e) => setRegSearchQuery(e.target.value)}
                     />
@@ -316,8 +396,8 @@ export default function OpServiceBillingPage({ onNavigate }) {
                   <table className="data-table">
                     <thead>
                       <tr>
-                        <th>OP Ticket</th>
-                        <th>MRN</th>
+                        <th>OP Token</th>
+                        <th>Patient ID</th>
                         <th>Patient</th>
                         <th>Doctor</th>
                         <th>Status</th>
@@ -343,7 +423,7 @@ export default function OpServiceBillingPage({ onNavigate }) {
                       ) : (
                         <tr>
                           <td colSpan="6" style={{ textAlign: 'center', padding: '16px', color: '#94a3b8' }}>
-                            {regSearchQuery ? `No active tickets match "${regSearchQuery}"` : 'No active OP registration tickets available.'}
+                            {regSearchQuery ? `No active tokens match "${regSearchQuery}"` : 'No active OP registration tokens available.'}
                           </td>
                         </tr>
                       )}
@@ -361,7 +441,7 @@ export default function OpServiceBillingPage({ onNavigate }) {
                 No Patient Selected for Billing
               </h4>
               <p style={{ fontSize: '0.85rem', color: '#64748b', margin: 0 }}>
-                Please click the blue <strong>"Bill This Patient"</strong> button in Step 1 above to load the patient ticket and prepare the bill.
+                Please click the blue <strong>"Bill This Patient"</strong> button in Step 1 above to load the patient token and prepare the bill.
               </p>
             </div>
           ) : (

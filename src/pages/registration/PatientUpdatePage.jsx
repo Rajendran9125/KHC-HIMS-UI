@@ -188,7 +188,7 @@ export default function PatientUpdatePage() {
             <UserCog size={22} color="#2563eb" />
             <span>REGISTRATION &gt; PATIENT DETAIL UPDATE</span>
           </h2>
-          <p className="card-subtitle">Search registered patient by MRN or contact info and update address, mobile, or demographics.</p>
+          <p className="card-subtitle">Search registered patient by Patient ID or contact info and update address, mobile, or demographics.</p>
         </div>
       </div>
 
@@ -198,7 +198,7 @@ export default function PatientUpdatePage() {
           <input 
             type="text" 
             className="form-control" 
-            placeholder="Search patient by MRN, Name, or Mobile..."
+            placeholder="Search patient by Patient ID, Name, or Mobile..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             style={{ flex: 1 }}

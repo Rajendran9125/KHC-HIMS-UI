@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../../services/api';
 import { UserPlus, Printer, CheckCircle, Search, User, MapPin } from 'lucide-react';
 import DobDatePicker from '../../components/DobDatePicker';
+import { printLandscapeSlip } from '../../utils/printSlip';
 
-export default function OpNewPage({ onRegistrationSuccess }) {
+export default function OpNewPage({ onRegistrationSuccess, currentUser }) {
   const [doctors, setDoctors] = useState([]);
   const [patientTypes, setPatientTypes] = useState([]);
   const [paymentTypes, setPaymentTypes] = useState([]);
@@ -37,6 +38,19 @@ export default function OpNewPage({ onRegistrationSuccess }) {
   });
 
   const [createdOp, setCreatedOp] = useState(null);
+
+  const loggedUserName = 
+    currentUser?.fullName || 
+    (currentUser?.firstName ? (currentUser.firstName + ' ' + (currentUser.lastName || '')).trim() : null) ||
+    currentUser?.username ||
+    (() => {
+      try {
+        const u = JSON.parse(localStorage.getItem('khc_user') || '{}');
+        return u.fullName || (u.firstName ? (u.firstName + ' ' + (u.lastName || '')).trim() : null) || u.username || 'Administrator';
+      } catch (e) {
+        return 'Administrator';
+      }
+    })();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -234,80 +248,194 @@ export default function OpNewPage({ onRegistrationSuccess }) {
 
   return (
     <div className="card">
-      <div className="card-header">
+      <div className="card-header no-print">
         <div>
           <h2 className="card-title">
             <UserPlus size={22} color="#2563eb" />
             <span>REGISTRATION &gt; OP NEW (Outpatient Registration)</span>
           </h2>
-          <p className="card-subtitle">Register a brand new patient, generate MRN number, and issue the first OP Ticket.</p>
+          <p className="card-subtitle">Register a brand new patient, generate Patient ID, and issue the first OP Token.</p>
         </div>
       </div>
 
       {createdOp ? (
-        <div style={{ textAlign: 'center', padding: '32px 16px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
-          <div style={{ display: 'inline-flex', padding: '12px', background: '#ecfdf5', borderRadius: '50%', color: '#059669', marginBottom: '16px' }}>
-            <CheckCircle size={48} />
+        <div className="op-success-view" style={{ textAlign: 'center', padding: '24px 16px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
+          <div className="no-print">
+            <div style={{ display: 'inline-flex', padding: '12px', background: '#ecfdf5', borderRadius: '50%', color: '#059669', marginBottom: '14px' }}>
+              <CheckCircle size={44} />
+            </div>
+            <h3 style={{ fontSize: '1.35rem', fontWeight: '800', color: '#0f172a', marginBottom: '6px' }}>
+              OP Registration Successfully Issued!
+            </h3>
+            <p style={{ color: '#64748b', marginBottom: '22px' }}>
+              Patient ID and OP Token Number have been generated.
+            </p>
           </div>
-          <h3 style={{ fontSize: '1.4rem', fontWeight: '800', color: '#0f172a', marginBottom: '8px' }}>
-            OP Registration Successfully Issued!
-          </h3>
-          <p style={{ color: '#64748b', marginBottom: '24px' }}>
-            Medical Record Number (MRN) and OP Ticket Number have been generated.
-          </p>
 
-          <div style={{ maxWidth: '520px', margin: '0 auto 28px', background: '#ffffff', border: '2px dashed #93c5fd', borderRadius: '8px', padding: '20px', textAlign: 'left' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px', marginBottom: '10px' }}>
-              <span style={{ color: '#64748b' }}>OP Ticket No:</span>
-              <strong style={{ color: '#2563eb', fontSize: '1.1rem' }}>{createdOp.opNumber}</strong>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px', marginBottom: '10px' }}>
-              <span style={{ color: '#64748b' }}>Patient MRN:</span>
-              <strong>{createdOp.patient?.mrn}</strong>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px', marginBottom: '10px' }}>
-              <span style={{ color: '#64748b' }}>Patient Name:</span>
-              <strong>{createdOp.patient?.firstName} {createdOp.patient?.lastName} ({createdOp.patient?.age}y{createdOp.patient?.dob ? ` | DOB: ${createdOp.patient?.dob}` : ''} / {createdOp.patient?.gender})</strong>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px', marginBottom: '10px' }}>
-              <span style={{ color: '#64748b' }}>Location:</span>
-              <strong>
-                {cities.find(c => c.id === createdOp.cityId)?.cityName || 'City'}
-                {states.find(s => s.id === createdOp.stateId)?.stateName ? `, ${states.find(s => s.id === createdOp.stateId)?.stateName}` : ''}
-                {countries.find(c => c.id === createdOp.countryId)?.countryName ? `, ${countries.find(c => c.id === createdOp.countryId)?.countryName}` : ''}
-                {createdOp.pincode ? ` - ${createdOp.pincode}` : ''}
-              </strong>
-            </div>
-            {createdOp.residentialAddress && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px', marginBottom: '10px' }}>
-                <span style={{ color: '#64748b' }}>Street Address:</span>
-                <span>{createdOp.residentialAddress}</span>
+          {/* Printable OP Registration Slip (A5 Size Landscape Format) */}
+          <div 
+            id="op-registration-slip"
+            className="op-a5-print-card"
+            style={{ 
+              maxWidth: '820px', 
+              margin: '0 auto 24px', 
+              background: '#ffffff', 
+              border: '2px solid #1e3a8a', 
+              borderRadius: '8px', 
+              padding: '16px 22px', 
+              textAlign: 'left',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
+            }}
+          >
+            {/* Hospital Header with KH Group Logo on the Left Side */}
+            <div style={{ display: 'flex', alignItems: 'center', borderBottom: '2px solid #1e3a8a', paddingBottom: '10px', marginBottom: '10px', position: 'relative' }}>
+              <div style={{ position: 'absolute', left: '4px', top: '50%', transform: 'translateY(-50%)' }}>
+                <img 
+                  src="/KH Logo.jpeg" 
+                  alt="KH Group Logo" 
+                  style={{ height: '52px', width: 'auto', objectFit: 'contain' }} 
+                />
               </div>
-            )}
-            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px', marginBottom: '10px' }}>
-              <span style={{ color: '#64748b' }}>Consulting Doctor:</span>
-              <strong>{createdOp.doctor?.doctorName} ({createdOp.doctor?.department})</strong>
+              <div style={{ width: '100%', textAlign: 'center', paddingLeft: '70px', paddingRight: '70px' }}>
+                <div style={{ fontSize: '1.5rem', fontWeight: '900', color: '#1e3a8a', letterSpacing: '0.02em', lineHeight: 1.1 }}>
+                  KH CLINIC
+                </div>
+                <div style={{ fontSize: '0.74rem', color: '#475569', marginTop: '2px' }}>
+                  Melvisharam - 632509, Ranipet Dist., Tamil Nadu | Ph: 04172-266123
+                </div>
+                <div style={{ fontSize: '0.78rem', fontWeight: '800', color: '#2563eb', marginTop: '3px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                  Outpatient (OP) Registration Token Slip
+                </div>
+              </div>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px', marginBottom: '10px' }}>
-              <span style={{ color: '#64748b' }}>Consultation Fee:</span>
-              <strong style={{ color: '#059669' }}>₹{createdOp.consultationFee} ({createdOp.paymentType})</strong>
+
+            {/* Date & Visit Type Subheader Bar */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.78rem', color: '#475569', background: '#f1f5f9', padding: '5px 12px', borderRadius: '4px', marginBottom: '10px' }}>
+              <span>
+                <strong>Date &amp; Time:</strong> {new Date(createdOp.registrationDate || Date.now()).toLocaleDateString('en-GB')} {new Date(createdOp.registrationDate || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}
+              </span>
+              <span><strong>Visit Type:</strong> NEW VISIT</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: '#64748b' }}>Patient Category:</span>
-              <span className="badge badge-primary">{createdOp.patientType}</span>
+
+            {/* Landscape Two-Column Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1.15fr 1fr', gap: '10px 24px', fontSize: '0.84rem' }}>
+              {/* Left Column: Patient Demographics */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0', paddingBottom: '6px' }}>
+                  <span style={{ color: '#64748b', fontWeight: '600' }}>OP Token No:</span>
+                  <strong style={{ color: '#2563eb', fontSize: '1.25rem', letterSpacing: '0.03em' }}>{createdOp.opNumber}</strong>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0', paddingBottom: '6px' }}>
+                  <span style={{ color: '#64748b', fontWeight: '600' }}>Patient Id:</span>
+                  <strong style={{ color: '#0f172a', fontSize: '1.1rem', fontFamily: 'monospace' }}>{createdOp.patient?.mrn}</strong>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0', paddingBottom: '6px' }}>
+                  <span style={{ color: '#64748b', fontWeight: '600' }}>Patient Name:</span>
+                  <strong style={{ color: '#0f172a', textAlign: 'right' }}>
+                    {createdOp.patient?.firstName} {createdOp.patient?.lastName} ({createdOp.patient?.age}y{createdOp.patient?.dob ? ` | DOB: ${createdOp.patient?.dob}` : ''} / {createdOp.patient?.gender})
+                  </strong>
+                </div>
+
+                {createdOp.patient?.mobile && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0', paddingBottom: '6px' }}>
+                    <span style={{ color: '#64748b', fontWeight: '600' }}>Contact Mobile:</span>
+                    <strong style={{ color: '#0f172a' }}>{createdOp.patient?.mobile}</strong>
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0', paddingBottom: '6px' }}>
+                  <span style={{ color: '#64748b', fontWeight: '600' }}>Location:</span>
+                  <strong style={{ color: '#0f172a', textAlign: 'right', maxWidth: '240px' }}>
+                    {cities.find(c => c.id === createdOp.cityId)?.cityName || 'City'}
+                    {states.find(s => s.id === createdOp.stateId)?.stateName ? `, ${states.find(s => s.id === createdOp.stateId)?.stateName}` : ''}
+                    {countries.find(c => c.id === createdOp.countryId)?.countryName ? `, ${countries.find(c => c.id === createdOp.countryId)?.countryName}` : ''}
+                    {createdOp.pincode ? ` - ${createdOp.pincode}` : ''}
+                  </strong>
+                </div>
+
+                {createdOp.residentialAddress && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0', paddingBottom: '6px' }}>
+                    <span style={{ color: '#64748b', fontWeight: '600' }}>Street Address:</span>
+                    <span style={{ color: '#0f172a', textAlign: 'right', maxWidth: '240px' }}>{createdOp.residentialAddress}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Right Column: Doctor & Billing */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0', paddingBottom: '6px' }}>
+                  <span style={{ color: '#64748b', fontWeight: '600' }}>Consulting Doctor:</span>
+                  <strong style={{ color: '#0f172a', textAlign: 'right' }}>
+                    {createdOp.doctor?.doctorName}
+                  </strong>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0', paddingBottom: '6px' }}>
+                  <span style={{ color: '#64748b', fontWeight: '600' }}>Department:</span>
+                  <strong style={{ color: '#0f172a', textAlign: 'right' }}>
+                    {createdOp.doctor?.department || 'General Medicine'}
+                  </strong>
+                </div>
+
+                {createdOp.doctor?.roomNo && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0', paddingBottom: '6px' }}>
+                    <span style={{ color: '#64748b', fontWeight: '600' }}>Consulting Room:</span>
+                    <strong style={{ color: '#0f172a', textAlign: 'right' }}>
+                      {createdOp.doctor?.roomNo}
+                    </strong>
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0', paddingBottom: '6px' }}>
+                  <span style={{ color: '#64748b', fontWeight: '600' }}>Consultation Fee:</span>
+                  <strong style={{ color: '#059669', fontSize: '1.1rem' }}>₹{createdOp.consultationFee} ({createdOp.paymentType})</strong>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '6px' }}>
+                  <span style={{ color: '#64748b', fontWeight: '600' }}>Patient Category:</span>
+                  <span className="badge badge-primary">{createdOp.patientType}</span>
+                </div>
+
+                {createdOp.remarks && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '6px' }}>
+                    <span style={{ color: '#64748b', fontWeight: '600' }}>Remarks:</span>
+                    <span style={{ color: '#0f172a', textAlign: 'right', maxWidth: '220px' }}>{createdOp.remarks}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Slip Footer with Notice & Billed By */}
+            <div style={{ marginTop: '12px', paddingTop: '8px', borderTop: '1px dashed #cbd5e1', fontSize: '0.72rem', color: '#64748b' }}>
+              <div style={{ fontStyle: 'italic', marginBottom: '8px', textAlign: 'center' }}>
+                * Valid for the date of issue only. Please bring this slip for pharmacy, laboratory &amp; follow-up visits.
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-start', paddingTop: '2px' }}>
+                <span>Billed By: <strong style={{ color: '#0f172a' }}>{loggedUserName}</strong></span>
+              </div>
             </div>
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '14px' }}>
-            <button className="btn btn-secondary" onClick={() => window.print()}>
-              <Printer size={16} /> Print OP Slip
+          {/* Action Buttons */}
+          <div className="no-print" style={{ display: 'flex', justifyContent: 'center', gap: '14px' }}>
+            <button 
+              className="btn btn-secondary" 
+              onClick={() => printLandscapeSlip('op-registration-slip', 'OP Registration Slip')}
+              style={{ padding: '9px 20px', fontWeight: '700', fontSize: '0.92rem', display: 'flex', alignItems: 'center', gap: '8px' }}
+            >
+              <Printer size={17} /> Print OP Slip (A5 Landscape)
             </button>
-            <button className="btn btn-primary" onClick={handleReset}>
-              <UserPlus size={16} /> Register Another Patient
+            <button 
+              className="btn btn-primary" 
+              onClick={handleReset}
+              style={{ padding: '9px 20px', fontWeight: '700', fontSize: '0.92rem', display: 'flex', alignItems: 'center', gap: '8px' }}
+            >
+              <UserPlus size={17} /> Register Another Patient
             </button>
           </div>
-        </div>
-      ) : (
+        </div>) : (
         <form onSubmit={handleSubmit}>
           <h3 style={{ fontSize: '1rem', fontWeight: '700', color: '#1e40af', marginBottom: '14px', borderBottom: '1px solid #e2e8f0', paddingBottom: '6px' }}>
             1. Patient Demographics &amp; Identity

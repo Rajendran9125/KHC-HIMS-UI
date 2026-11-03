@@ -90,7 +90,7 @@ export default function ModifyPatientTypePage() {
             <div>
               <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: '700', textTransform: 'uppercase' }}>Selected Registration</span>
               <h3 style={{ fontSize: '1.2rem', fontWeight: '800', color: '#1e40af' }}>
-                {selectedReg.opNumber} — {selectedReg.patient?.firstName} {selectedReg.patient?.lastName}
+                {selectedReg.opNumber} — {selectedReg.patient?.firstName} {selectedReg.patient?.lastName} ({selectedReg.patient?.mrn})
               </h3>
             </div>
             <button className="btn btn-secondary btn-sm" onClick={() => setSelectedReg(null)}>
@@ -161,7 +161,7 @@ export default function ModifyPatientTypePage() {
             <input 
               type="text" 
               className="form-control" 
-              placeholder="Search by OP Number or Patient..."
+              placeholder="Search by OP Number, Patient ID or Patient..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               style={{ maxWidth: '400px' }}
@@ -176,7 +176,7 @@ export default function ModifyPatientTypePage() {
               <thead>
                 <tr>
                   <th>OP Number</th>
-                  <th>MRN</th>
+                  <th>Patient ID</th>
                   <th>Patient Name</th>
                   <th>Current Patient Type</th>
                   <th>Doctor</th>

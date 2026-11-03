@@ -63,7 +63,7 @@ export default function ModifyPaymentTypeRegPage() {
             <CreditCard size={22} color="#2563eb" />
             <span>REGISTRATION &gt; PAYMENT TYPE MODIFY</span>
           </h2>
-          <p className="card-subtitle">Change the recorded payment method (Cash, Card, UPI, Insurance) on an OP registration ticket.</p>
+          <p className="card-subtitle">Change the recorded payment method (Cash, Card, UPI, Insurance) on an OP registration token.</p>
         </div>
       </div>
 
@@ -90,7 +90,7 @@ export default function ModifyPaymentTypeRegPage() {
             <div>
               <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: '700', textTransform: 'uppercase' }}>Selected Registration</span>
               <h3 style={{ fontSize: '1.2rem', fontWeight: '800', color: '#1e40af' }}>
-                {selectedReg.opNumber} — {selectedReg.patient?.firstName} {selectedReg.patient?.lastName}
+                {selectedReg.opNumber} — {selectedReg.patient?.firstName} {selectedReg.patient?.lastName} ({selectedReg.patient?.mrn})
               </h3>
             </div>
             <button className="btn btn-secondary btn-sm" onClick={() => setSelectedReg(null)}>
@@ -142,7 +142,7 @@ export default function ModifyPaymentTypeRegPage() {
                   required 
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
-                  placeholder="e.g. Counter cash swapped with UPI QR transfer"
+                  placeholder="e.g. Switched to UPI QR code payment"
                 />
               </div>
             </div>
@@ -150,7 +150,7 @@ export default function ModifyPaymentTypeRegPage() {
             <div style={{ marginTop: '16px' }}>
               <button type="submit" className="btn btn-primary">
                 <Save size={16} />
-                <span>Save Payment Mode Modification</span>
+                <span>Save Payment Modification</span>
               </button>
             </div>
           </form>
@@ -161,7 +161,7 @@ export default function ModifyPaymentTypeRegPage() {
             <input 
               type="text" 
               className="form-control" 
-              placeholder="Search by OP Number, MRN, or Patient..."
+              placeholder="Search by OP Number, Patient ID, or Patient..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               style={{ maxWidth: '400px' }}
@@ -176,7 +176,7 @@ export default function ModifyPaymentTypeRegPage() {
               <thead>
                 <tr>
                   <th>OP Number</th>
-                  <th>MRN</th>
+                  <th>Patient ID</th>
                   <th>Patient Name</th>
                   <th>Doctor</th>
                   <th>Fee (₹)</th>
