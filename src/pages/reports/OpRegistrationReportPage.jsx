@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { api } from '../../services/api';
-import { BarChart3, Users, Filter, Printer, Stethoscope, History } from 'lucide-react';
+import { Search, Users, Filter, Printer, Stethoscope, History, X } from 'lucide-react';
 
 export default function OpRegistrationReportPage() {
   const [data, setData] = useState(null);
@@ -9,6 +9,7 @@ export default function OpRegistrationReportPage() {
   const [endDate, setEndDate] = useState('');
   const [visitType, setVisitType] = useState('');
   const [doctorId, setDoctorId] = useState('');
+  const [patientSearch, setPatientSearch] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -51,18 +52,36 @@ export default function OpRegistrationReportPage() {
     setEndDate('');
     setVisitType('');
     setDoctorId('');
+    setPatientSearch('');
     setTimeout(fetchReport, 0);
   };
+
+  // Filter registrations in-memory by patientSearch (Patient ID / MRN, Name, Phone, OP Token)
+  const displayedRegistrations = useMemo(() => {
+    if (!data?.registrations) return [];
+    if (!patientSearch.trim()) return data.registrations;
+    const q = patientSearch.toLowerCase().trim();
+    return data.registrations.filter(r => {
+      const opNum = (r.opNumber || '').toLowerCase();
+      const mrn = (r.patient?.mrn || '').toLowerCase();
+      const pName = `${r.patient?.firstName || ''} ${r.patient?.lastName || ''}`.toLowerCase();
+      const phone = (r.patient?.mobile || '').toLowerCase();
+      const doc = (r.doctor?.doctorName || '').toLowerCase();
+      return opNum.includes(q) || mrn.includes(q) || pName.includes(q) || phone.includes(q) || doc.includes(q);
+    });
+  }, [data?.registrations, patientSearch]);
 
   return (
     <div className="card">
       <div className="card-header">
         <div>
           <h2 className="card-title">
-            <BarChart3 size={22} color="#2563eb" />
-            <span>REPORT &gt; OP REGISTRATION</span>
+            <Search size={22} color="#2563eb" />
+            <span>REPORT &gt; OP PATIENT SEARCH OPTION</span>
           </h2>
-          <p className="card-subtitle">Outpatient registration metrics, footfall volume, new vs follow-up visits, and doctor loads.</p>
+          <p className="card-subtitle">
+            Search, filter, and view registered outpatient records by Patient ID, Token, Name, Mobile, Doctor, or Date.
+          </p>
         </div>
         <button className="btn btn-secondary" onClick={() => window.print()}>
           <Printer size={16} /> Print Report
@@ -71,6 +90,34 @@ export default function OpRegistrationReportPage() {
 
       {/* Filter toolbar */}
       <form onSubmit={handleFilter} style={{ background: '#f8fafc', padding: '16px', borderRadius: '8px', border: '1px solid #cbd5e1', marginBottom: '24px' }}>
+        {/* Top row: Patient Search Query */}
+        <div style={{ marginBottom: '14px' }}>
+          <label className="form-label" style={{ fontWeight: '700', fontSize: '0.85rem', color: '#1e3a8a', marginBottom: '4px' }}>
+            Search Patient by Patient ID (MRN), Name, Mobile Number, or OP Token
+          </label>
+          <div style={{ position: 'relative' }}>
+            <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
+            <input 
+              type="text" 
+              className="form-control" 
+              style={{ paddingLeft: '36px', height: '38px', fontSize: '0.9rem' }}
+              placeholder="e.g. Type MRN-2026-0001, Ramesh, 9876543210, or OP-2026-0001..."
+              value={patientSearch}
+              onChange={(e) => setPatientSearch(e.target.value)}
+            />
+            {patientSearch && (
+              <button 
+                type="button" 
+                onClick={() => setPatientSearch('')}
+                style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}
+              >
+                <X size={15} />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Bottom row: Date & Dropdown Filters */}
         <div className="form-grid" style={{ marginBottom: '12px' }}>
           <div className="form-group">
             <label className="form-label">From Date</label>
@@ -191,6 +238,12 @@ export default function OpRegistrationReportPage() {
       )}
 
       {/* Registration Details Table */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+        <span style={{ fontSize: '0.88rem', fontWeight: '700', color: '#1e3a8a' }}>
+          Showing {displayedRegistrations.length} of {data?.totalCount ?? 0} registered patient visits
+        </span>
+      </div>
+
       <div className="table-responsive">
         <table className="data-table">
           <thead>
@@ -200,6 +253,7 @@ export default function OpRegistrationReportPage() {
               <th>Patient ID</th>
               <th>Patient Name</th>
               <th>Age/Gender</th>
+              <th>Contact</th>
               <th>Doctor</th>
               <th>Visit Type</th>
               <th>Category</th>
@@ -209,17 +263,18 @@ export default function OpRegistrationReportPage() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan="10" style={{ textAlign: 'center', padding: '24px' }}>Loading registration records...</td></tr>
-            ) : !data?.registrations || data.registrations.length === 0 ? (
-              <tr><td colSpan="10" style={{ textAlign: 'center', padding: '24px' }}>No registrations found.</td></tr>
+              <tr><td colSpan="11" style={{ textAlign: 'center', padding: '24px' }}>Loading registration records...</td></tr>
+            ) : displayedRegistrations.length === 0 ? (
+              <tr><td colSpan="11" style={{ textAlign: 'center', padding: '24px', color: '#94a3b8' }}>No registrations match the selected filters or search text.</td></tr>
             ) : (
-              data.registrations.map(r => (
+              displayedRegistrations.map(r => (
                 <tr key={r.id}>
                   <td><strong>{r.opNumber}</strong></td>
-                  <td>{r.registrationDate ? new Date(r.registrationDate).toLocaleString() : '—'}</td>
+                  <td>{r.registrationDate ? new Date(r.registrationDate).toLocaleString('en-GB') : '-'}</td>
                   <td><code>{r.patient?.mrn}</code></td>
                   <td><strong>{r.patient?.firstName} {r.patient?.lastName}</strong></td>
                   <td>{r.patient?.age}y / {r.patient?.gender}</td>
+                  <td>{r.patient?.mobile || '-'}</td>
                   <td>{r.doctor?.doctorName}</td>
                   <td>
                     <span className={`badge ${r.visitType === 'NEW' ? 'badge-primary' : 'badge-warning'}`}>

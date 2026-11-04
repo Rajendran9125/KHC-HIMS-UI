@@ -69,13 +69,14 @@ export default function UserCreationPage() {
           { menuCode: 'patient-update', menuLabel: 'REGISTRATION: PATIENT DETAIL UPDATE', category: 'REGISTRATION' },
           { menuCode: 'modify-doctor-reg', menuLabel: 'REGISTRATION: DOCTOR MODIFY', category: 'REGISTRATION' },
           { menuCode: 'modify-patient-type', menuLabel: 'REGISTRATION: PATIENT TYPE MODIFY', category: 'REGISTRATION' },
-          { menuCode: 'modify-payment-type-reg', menuLabel: 'REGISTRATION: PAYMENT TYPE MODIFY', category: 'REGISTRATION' },
+          
           { menuCode: 'op-billing', menuLabel: 'BILLING: OP SERVICE BILLING', category: 'BILLING' },
+          { menuCode: 'copy-bill', menuLabel: 'BILLING: COPY BILL (REPRINT)', category: 'BILLING' },
           { menuCode: 'modify-doctor-bill', menuLabel: 'BILLING: DOCTOR MODIFY', category: 'BILLING' },
           { menuCode: 'modify-payment-type-bill', menuLabel: 'BILLING: PAYMENT TYPE MODIFY', category: 'BILLING' },
           { menuCode: 'report-billing', menuLabel: 'REPORT: OP BILLING', category: 'REPORT' },
           { menuCode: 'report-revenue', menuLabel: 'REPORT: REVENUE (SUMMARY + SERVICE WISE)', category: 'REPORT' },
-          { menuCode: 'report-registration', menuLabel: 'REPORT: OP REGISTRATION', category: 'REPORT' },
+          { menuCode: 'report-registration', menuLabel: 'REPORT: OP PATIENT SEARCH OPTION', category: 'REPORT' },
         ]);
       }
     } catch (err) {
