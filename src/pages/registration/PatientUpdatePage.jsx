@@ -161,6 +161,11 @@ export default function PatientUpdatePage() {
 
   const handleSave = async (e) => {
     e.preventDefault();
+    const cleanMobile = (form.mobile || '').replace(/\D/g, '');
+    if (cleanMobile.length !== 10) {
+      alert('Mobile number must be exactly 10 digits.');
+      return;
+    }
     try {
       const payload = {
         ...form,
@@ -327,10 +332,15 @@ export default function PatientUpdatePage() {
               <label className="form-label required">Mobile Number</label>
               <input 
                 type="tel" 
+                maxLength={10}
                 className="form-control" 
                 required 
                 value={form.mobile}
-                onChange={(e) => setForm({...form, mobile: e.target.value})}
+                onChange={(e) => {
+                  const digitsOnly = e.target.value.replace(/\D/g, '').slice(0, 10);
+                  setForm({...form, mobile: digitsOnly});
+                }}
+                placeholder="10-digit mobile number"
               />
             </div>
 
@@ -340,7 +350,8 @@ export default function PatientUpdatePage() {
                 type="email" 
                 className="form-control" 
                 value={form.email}
-                onChange={(e) => setForm({...form, email: e.target.value})}
+                onChange={(e) => setForm({...form, email: e.target.value.toLowerCase()})}
+                placeholder="patient@email.com"
               />
             </div>
 
