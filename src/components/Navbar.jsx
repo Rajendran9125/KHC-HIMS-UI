@@ -118,7 +118,7 @@ export default function Navbar({ activeView, setActiveView, currentUser, onLogou
             onMouseLeave={() => setOpenMenu(null)}
           >
             <button 
-              className={`nav-menu-btn ${['admin', 'users', 'services', 'location-master'].includes(activeView) ? 'active' : ''}`}
+              className={`nav-menu-btn ${['admin', 'users', 'services', 'location-master', 'change-password'].includes(activeView) ? 'active' : ''}`}
               onClick={() => toggleDropdown('master')}
             >
               <ShieldCheck size={17} />
@@ -137,6 +137,19 @@ export default function Navbar({ activeView, setActiveView, currentUser, onLogou
                     <div className="dropdown-text">
                       <div className="dropdown-title">ADMIN</div>
                       <div className="dropdown-desc">Doctor Master &amp; Hospital Settings</div>
+                    </div>
+                  </button>
+                )}
+
+                {isAllowed('location-master') && (
+                  <button 
+                    className={`dropdown-item ${activeView === 'location-master' ? 'active' : ''}`}
+                    onClick={() => handleSelect('location-master')}
+                  >
+                    <span className="dropdown-bullet"></span>
+                    <div className="dropdown-text">
+                      <div className="dropdown-title">LOCATION MASTER</div>
+                      <div className="dropdown-desc">Country, State &amp; City (Add / Delete)</div>
                     </div>
                   </button>
                 )}
@@ -166,6 +179,17 @@ export default function Navbar({ activeView, setActiveView, currentUser, onLogou
                     </div>
                   </button>
                 )}
+
+                <button 
+                  className={`dropdown-item ${activeView === 'change-password' ? 'active' : ''}`}
+                  onClick={() => handleSelect('change-password')}
+                >
+                  <span className="dropdown-bullet"></span>
+                  <div className="dropdown-text">
+                    <div className="dropdown-title">CHANGE PASSWORD</div>
+                    <div className="dropdown-desc">Username, Old &amp; New Password Update</div>
+                  </div>
+                </button>
               </div>
             )}
           </div>

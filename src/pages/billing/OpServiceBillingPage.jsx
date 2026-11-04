@@ -30,7 +30,7 @@ export default function OpServiceBillingPage({ onNavigate, currentUser }) {
   const [doctorId, setDoctorId] = useState('');
   const [paymentType, setPaymentType] = useState('');
   const [discount, setDiscount] = useState(0);
-  const [taxPercent, setTaxPercent] = useState(5);
+  const [taxPercent, setTaxPercent] = useState(0);
   const [remarks, setRemarks] = useState('');
 
   const [items, setItems] = useState([]);
@@ -167,6 +167,7 @@ export default function OpServiceBillingPage({ onNavigate, currentUser }) {
     setCreatedBill(null);
     setSelectedReg(null);
     setDiscount(0);
+    setTaxPercent(0);
     setRemarks('');
     setItems([]);
   };

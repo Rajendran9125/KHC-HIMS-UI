@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../../services/api';
-import { Stethoscope, Plus, Edit2, Search, CheckCircle2, XCircle, Power, UserCheck, UserX } from 'lucide-react';
+import { Stethoscope, Plus, Edit2, Search, CheckCircle2, XCircle, Power, UserCheck, UserX, Globe, KeyRound } from 'lucide-react';
 
-export default function AdminPage() {
+export default function AdminPage({ onNavigate }) {
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -129,10 +129,24 @@ export default function AdminPage() {
           </h2>
           <p className="card-subtitle">Manage doctor credentials, consulting fees, room allotments, and departmental setups.</p>
         </div>
-        <button className="btn btn-primary" onClick={openAddModal}>
-          <Plus size={16} />
-          <span>Add New Doctor</span>
-        </button>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          {onNavigate && (
+            <button className="btn btn-secondary" onClick={() => onNavigate('location-master')} title="Manage Country, State and City Master">
+              <Globe size={16} />
+              <span>Location Master</span>
+            </button>
+          )}
+          {onNavigate && (
+            <button className="btn btn-secondary" onClick={() => onNavigate('change-password')} title="Change Account Password">
+              <KeyRound size={16} />
+              <span>Change Password</span>
+            </button>
+          )}
+          <button className="btn btn-primary" onClick={openAddModal}>
+            <Plus size={16} />
+            <span>Add New Doctor</span>
+          </button>
+        </div>
       </div>
 
       {/* Status Filter Tabs */}

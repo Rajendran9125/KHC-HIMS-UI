@@ -168,6 +168,11 @@ export default function OpNewPage({ onRegistrationSuccess, currentUser }) {
       alert('Please select Gender');
       return;
     }
+    const cleanMobile = (formData.mobile || '').replace(/\D/g, '');
+    if (cleanMobile.length !== 10) {
+      alert('Mobile number must be exactly 10 digits.');
+      return;
+    }
     if (!formData.countryId) {
       alert('Please select Country');
       return;
@@ -513,10 +518,14 @@ export default function OpNewPage({ onRegistrationSuccess, currentUser }) {
               <label className="form-label required">Mobile Number</label>
               <input 
                 type="tel" 
+                maxLength={10}
                 className="form-control" 
                 required 
                 value={formData.mobile}
-                onChange={(e) => setFormData({...formData, mobile: e.target.value})}
+                onChange={(e) => {
+                  const digitsOnly = e.target.value.replace(/\D/g, '').slice(0, 10);
+                  setFormData({...formData, mobile: digitsOnly});
+                }}
                 placeholder="e.g. 9876543210"
               />
             </div>
@@ -527,7 +536,7 @@ export default function OpNewPage({ onRegistrationSuccess, currentUser }) {
                 type="email" 
                 className="form-control" 
                 value={formData.email}
-                onChange={(e) => setFormData({...formData, email: e.target.value})}
+                onChange={(e) => setFormData({...formData, email: e.target.value.toLowerCase()})}
                 placeholder="patient@email.com"
               />
             </div>

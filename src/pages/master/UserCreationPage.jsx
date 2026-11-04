@@ -152,6 +152,13 @@ export default function UserCreationPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (form.phone) {
+      const cleanPhone = form.phone.replace(/\D/g, '');
+      if (cleanPhone.length !== 10) {
+        setMessage({ type: 'danger', text: 'Mobile phone number must be exactly 10 digits.' });
+        return;
+      }
+    }
     try {
       if (editingUserId) {
         // UPDATE MODE
@@ -332,7 +339,7 @@ export default function UserCreationPage() {
                 type="email" 
                 className="form-control" 
                 value={form.email}
-                onChange={(e) => setForm({...form, email: e.target.value})}
+                onChange={(e) => setForm({...form, email: e.target.value.toLowerCase()})}
                 placeholder="staff@hospital.com"
               />
             </div>
@@ -340,10 +347,14 @@ export default function UserCreationPage() {
             <div className="form-group">
               <label className="form-label">Mobile Phone Number</label>
               <input 
-                type="text" 
+                type="tel" 
+                maxLength={10}
                 className="form-control" 
                 value={form.phone}
-                onChange={(e) => setForm({...form, phone: e.target.value})}
+                onChange={(e) => {
+                  const digitsOnly = e.target.value.replace(/\D/g, '').slice(0, 10);
+                  setForm({...form, phone: digitsOnly});
+                }}
                 placeholder="e.g. 9811122233"
               />
             </div>

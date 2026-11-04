@@ -8,6 +8,7 @@ import AdminPage from './pages/master/AdminPage';
 import UserCreationPage from './pages/master/UserCreationPage';
 import ServiceMasterPage from './pages/master/ServiceMasterPage';
 import LocationMasterPage from './pages/master/LocationMasterPage';
+import ChangePasswordPage from './pages/master/ChangePasswordPage';
 
 // Registration Pages
 import OpNewPage from './pages/registration/OpNewPage';
@@ -82,7 +83,7 @@ export default function App() {
     : (currentUser?.allowedMenus || '').split(/[\s,]+/).map(s => s.trim()).filter(Boolean);
 
   const isPermitted = (viewId) => {
-    if (viewId === 'dashboard') return true;
+    if (viewId === 'dashboard' || viewId === 'change-password') return true;
     if (isAdmin) return true;
     return allowed.includes(viewId);
   };
@@ -110,13 +111,15 @@ export default function App() {
     switch (activeView) {
       // Master
       case 'admin':
-        return <AdminPage />;
+        return <AdminPage onNavigate={setActiveView} />;
       case 'users':
         return <UserCreationPage />;
       case 'services':
         return <ServiceMasterPage />;
       case 'location-master':
         return <LocationMasterPage />;
+      case 'change-password':
+        return <ChangePasswordPage currentUser={currentUser} />;
 
       // Registration
       case 'op-new':
