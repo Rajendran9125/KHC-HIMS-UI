@@ -60,8 +60,8 @@ export default function Navbar({ activeView, setActiveView, currentUser, onLogou
 
   // Permissions check for main tabs
   const hasMasterAccess = isAdmin || isAllowed('admin') || isAllowed('users') || isAllowed('services') || isAllowed('location-master');
-  const hasRegAccess = isAdmin || ['op-new', 'op-review', 'patient-update', 'modify-doctor-reg', 'modify-patient-type', 'modify-payment-type-reg'].some(isAllowed);
-  const hasBillAccess = isAdmin || ['op-billing', 'modify-doctor-bill', 'modify-payment-type-bill', 'refund-billing'].some(isAllowed);
+  const hasRegAccess = isAdmin || ['op-new', 'op-review', 'patient-update', 'modify-doctor-reg', 'modify-patient-type'].some(isAllowed);
+  const hasBillAccess = isAdmin || ['op-billing', 'copy-bill', 'modify-doctor-bill', 'modify-payment-type-bill', 'refund-billing'].some(isAllowed);
   const hasReportAccess = isAdmin || ['report-billing', 'report-revenue', 'report-registration'].some(isAllowed);
 
   return (
@@ -203,7 +203,7 @@ export default function Navbar({ activeView, setActiveView, currentUser, onLogou
             onMouseLeave={() => setOpenMenu(null)}
           >
             <button 
-              className={`nav-menu-btn ${['op-new', 'op-review', 'patient-update', 'modify-doctor-reg', 'modify-patient-type', 'modify-payment-type-reg'].includes(activeView) ? 'active' : ''}`}
+              className={`nav-menu-btn ${['op-new', 'op-review', 'patient-update', 'modify-doctor-reg', 'modify-patient-type'].includes(activeView) ? 'active' : ''}`}
               onClick={() => toggleDropdown('registration')}
             >
               <UserCheck size={17} />
@@ -278,18 +278,7 @@ export default function Navbar({ activeView, setActiveView, currentUser, onLogou
                   </button>
                 )}
 
-                {isAllowed('modify-payment-type-reg') && (
-                  <button 
-                    className={`dropdown-item ${activeView === 'modify-payment-type-reg' ? 'active' : ''}`}
-                    onClick={() => handleSelect('modify-payment-type-reg')}
-                  >
-                    <span className="dropdown-bullet"></span>
-                    <div className="dropdown-text">
-                      <div className="dropdown-title">PAYMENT TYPE MODIFY</div>
-                      <div className="dropdown-desc">Cash, Card, UPI on Registration</div>
-                    </div>
-                  </button>
-                )}
+
               </div>
             )}
           </div>
@@ -303,7 +292,7 @@ export default function Navbar({ activeView, setActiveView, currentUser, onLogou
             onMouseLeave={() => setOpenMenu(null)}
           >
             <button 
-              className={`nav-menu-btn ${['op-billing', 'modify-doctor-bill', 'modify-payment-type-bill', 'refund-billing'].includes(activeView) ? 'active' : ''}`}
+              className={`nav-menu-btn ${['op-billing', 'copy-bill', 'modify-doctor-bill', 'modify-payment-type-bill', 'refund-billing'].includes(activeView) ? 'active' : ''}`}
               onClick={() => toggleDropdown('billing')}
             >
               <Receipt size={17} />
@@ -322,6 +311,19 @@ export default function Navbar({ activeView, setActiveView, currentUser, onLogou
                     <div className="dropdown-text">
                       <div className="dropdown-title">OP SERVICE BILLING</div>
                       <div className="dropdown-desc">Lab, Radiology &amp; Procedure Billing</div>
+                    </div>
+                  </button>
+                )}
+
+                {(isAdmin || isAllowed('copy-bill') || isAllowed('op-billing')) && (
+                  <button 
+                    className={`dropdown-item ${activeView === 'copy-bill' ? 'active' : ''}`}
+                    onClick={() => handleSelect('copy-bill')}
+                  >
+                    <span className="dropdown-bullet"></span>
+                    <div className="dropdown-text">
+                      <div className="dropdown-title">COPY BILL (REPRINT)</div>
+                      <div className="dropdown-desc">Search &amp; Reprint OP Slips &amp; Service Bills</div>
                     </div>
                   </button>
                 )}
@@ -420,8 +422,8 @@ export default function Navbar({ activeView, setActiveView, currentUser, onLogou
                   >
                     <span className="dropdown-bullet"></span>
                     <div className="dropdown-text">
-                      <div className="dropdown-title">OP REGISTRATION</div>
-                      <div className="dropdown-desc">Footfall, Doctor Loads &amp; Patient Types</div>
+                      <div className="dropdown-title">OP PATIENT SEARCH OPTION</div>
+                      <div className="dropdown-desc">Search Patients, Footfall &amp; Doctor Visits</div>
                     </div>
                   </button>
                 )}

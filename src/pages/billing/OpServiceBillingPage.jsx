@@ -25,6 +25,7 @@ export default function OpServiceBillingPage({ onNavigate, currentUser }) {
     })();
 
   const [regSearchQuery, setRegSearchQuery] = useState('');
+  const [tokenFilterTab, setTokenFilterTab] = useState('PENDING'); // 'PENDING' | 'ALL'
   const [serviceSearchQuery, setServiceSearchQuery] = useState('');
 
   const [doctorId, setDoctorId] = useState('');
@@ -56,6 +57,10 @@ export default function OpServiceBillingPage({ onNavigate, currentUser }) {
   }, []);
 
   const handleSelectReg = (reg) => {
+    if (reg.status === 'BILLED' || reg.status === 'PAID') {
+      alert(`OP Token ${reg.opNumber} is already BILLED and PAID. Duplicate billing is not allowed.`);
+      return;
+    }
     setSelectedReg(reg);
     if (reg.doctor?.id) setDoctorId(reg.doctor.id);
     if (reg.paymentType) setPaymentType(reg.paymentType);
@@ -108,6 +113,10 @@ export default function OpServiceBillingPage({ onNavigate, currentUser }) {
 
   // Search Filter 1: Active OP Tickets filter
   const filteredRegistrations = registrations.filter(r => {
+    const isBilledOrPaid = r.status === 'BILLED' || r.status === 'PAID';
+    if (tokenFilterTab === 'PENDING' && isBilledOrPaid) {
+      return false;
+    }
     if (!regSearchQuery.trim()) return true;
     const q = regSearchQuery.toLowerCase();
     const pName = `${r.patient?.firstName || ''} ${r.patient?.lastName || ''}`.toLowerCase();
@@ -131,6 +140,10 @@ export default function OpServiceBillingPage({ onNavigate, currentUser }) {
     e.preventDefault();
     if (!selectedReg) {
       alert('Please select an OP Registration or Patient first.');
+      return;
+    }
+    if (selectedReg.status === 'BILLED' || selectedReg.status === 'PAID') {
+      alert(`OP Token ${selectedReg.opNumber} is already BILLED and PAID. Duplicate billing is not allowed.`);
       return;
     }
     if (items.length === 0) {
@@ -158,6 +171,12 @@ export default function OpServiceBillingPage({ onNavigate, currentUser }) {
 
       const bill = await api.createOpBill(payload);
       setCreatedBill(bill);
+      try {
+        const freshRegs = await api.getRegistrations();
+        setRegistrations(freshRegs || []);
+      } catch (reloadErr) {
+        console.error('Failed to reload registrations:', reloadErr);
+      }
     } catch (err) {
       alert('Error creating bill: ' + err.message);
     }
@@ -369,6 +388,47 @@ export default function OpServiceBillingPage({ onNavigate, currentUser }) {
               </div>
             ) : (
               <div>
+                {/* Pending vs All Tokens Toggle Filter */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
+                  <div style={{ display: 'inline-flex', background: '#e2e8f0', borderRadius: '6px', padding: '2px' }}>
+                    <button
+                      type="button"
+                      onClick={() => setTokenFilterTab('PENDING')}
+                      style={{
+                        padding: '4px 12px',
+                        fontSize: '0.8rem',
+                        fontWeight: '700',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        background: tokenFilterTab === 'PENDING' ? '#2563eb' : 'transparent',
+                        color: tokenFilterTab === 'PENDING' ? '#ffffff' : '#475569'
+                      }}
+                    >
+                      Pending Tokens (Unbilled)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTokenFilterTab('ALL')}
+                      style={{
+                        padding: '4px 12px',
+                        fontSize: '0.8rem',
+                        fontWeight: '700',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        background: tokenFilterTab === 'ALL' ? '#2563eb' : 'transparent',
+                        color: tokenFilterTab === 'ALL' ? '#ffffff' : '#475569'
+                      }}
+                    >
+                      All Tokens (Including Paid)
+                    </button>
+                  </div>
+                  <span style={{ fontSize: '0.78rem', color: '#64748b' }}>
+                    {tokenFilterTab === 'PENDING' ? 'Only unbilled tickets available to bill' : 'Showing all historical tickets'}
+                  </span>
+                </div>
+
                 {/* Search Box for Active Tickets */}
                 <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
                   <div style={{ position: 'relative', flex: 1 }}>
@@ -413,11 +473,27 @@ export default function OpServiceBillingPage({ onNavigate, currentUser }) {
                             <td><span className="badge badge-primary">{r.patient?.mrn}</span></td>
                             <td>{r.patient?.firstName} {r.patient?.lastName}</td>
                             <td>{r.doctor?.doctorName}</td>
-                            <td><span className={`badge ${r.status === 'BILLED' ? 'badge-success' : 'badge-warning'}`}>{r.status}</span></td>
                             <td>
-                              <button type="button" className="btn btn-primary btn-sm" onClick={() => handleSelectReg(r)}>
-                                Bill This Patient
-                              </button>
+                              <span className={`badge ${r.status === 'BILLED' ? 'badge-success' : 'badge-warning'}`}>
+                                {r.status}
+                              </span>
+                            </td>
+                            <td>
+                              {r.status === 'BILLED' || r.status === 'PAID' ? (
+                                <button 
+                                  type="button" 
+                                  className="btn btn-secondary btn-sm" 
+                                  disabled 
+                                  style={{ opacity: 0.65, cursor: 'not-allowed', background: '#f1f5f9', color: '#64748b', border: '1px solid #cbd5e1' }}
+                                  title="This OP Token has already been billed and paid. Duplicate billing is not allowed."
+                                >
+                                  Already Paid
+                                </button>
+                              ) : (
+                                <button type="button" className="btn btn-primary btn-sm" onClick={() => handleSelectReg(r)}>
+                                  Bill This Patient
+                                </button>
+                              )}
                             </td>
                           </tr>
                         ))
