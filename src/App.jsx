@@ -33,6 +33,64 @@ import OpRegistrationReportPage from './pages/reports/OpRegistrationReportPage';
 import { api } from './services/api';
 import { ShieldAlert } from 'lucide-react';
 
+const VIEW_MAP = {
+  '': 'dashboard',
+  'dashboard': 'dashboard',
+  'login': 'dashboard',
+  // Master
+  'admin': 'admin',
+  'users': 'users',
+  'services': 'services',
+  'location-master': 'location-master',
+  'change-password': 'change-password',
+  // Registration
+  'op-new': 'op-new',
+  'op-review': 'op-review',
+  'patient-update': 'patient-update',
+  'modify-doctor-reg': 'modify-doctor-reg',
+  'modify-patient-type': 'modify-patient-type',
+  'modify-payment-type-reg': 'modify-payment-type-reg',
+  // Billing
+  'op-billing': 'op-billing',
+  'copy-bill': 'copy-bill',
+  'modify-doctor-bill': 'modify-doctor-bill',
+  'modify-payment-type-bill': 'modify-payment-type-bill',
+  'refund-billing': 'refund-billing',
+  // Reports
+  'report-billing': 'report-billing',
+  'report-revenue': 'report-revenue',
+  'report-registration': 'report-registration',
+};
+
+const VIEW_TITLES = {
+  'dashboard': 'KH CLINIC - Clinic Dashboard',
+  'login': 'KH CLINIC - Staff Login',
+  'admin': 'KH CLINIC - Admin Master',
+  'users': 'KH CLINIC - User Management',
+  'services': 'KH CLINIC - Service Master',
+  'location-master': 'KH CLINIC - Location Master',
+  'change-password': 'KH CLINIC - Change Password',
+  'op-new': 'KH CLINIC - OP New Registration',
+  'op-review': 'KH CLINIC - OP Review Visit',
+  'patient-update': 'KH CLINIC - Patient Detail Update',
+  'modify-doctor-reg': 'KH CLINIC - Modify Doctor (Reg)',
+  'modify-patient-type': 'KH CLINIC - Modify Patient Type',
+  'modify-payment-type-reg': 'KH CLINIC - Modify Payment Type',
+  'op-billing': 'KH CLINIC - OP Service Billing',
+  'copy-bill': 'KH CLINIC - Copy Bill (Duplicate / Reprint)',
+  'modify-doctor-bill': 'KH CLINIC - Modify Doctor (Bill)',
+  'modify-payment-type-bill': 'KH CLINIC - Modify Payment Type (Bill)',
+  'refund-billing': 'KH CLINIC - Refund / Revert Billing',
+  'report-billing': 'KH CLINIC - OP Billing Report',
+  'report-revenue': 'KH CLINIC - Revenue Report',
+  'report-registration': 'KH CLINIC - OP Registration Report',
+};
+
+const getInitialView = () => {
+  const rawPath = window.location.pathname.replace(/^\/+/, '').split('/')[0];
+  return VIEW_MAP[rawPath] || 'dashboard';
+};
+
 export default function App() {
   const [currentUser, setCurrentUser] = useState(() => {
     try {
@@ -43,8 +101,36 @@ export default function App() {
     }
   });
 
-  const [activeView, setActiveView] = useState('dashboard');
+  const [activeView, setActiveView] = useState(getInitialView);
   const [stats, setStats] = useState(null);
+
+  // Sync browser URL and document title with activeView & auth status
+  useEffect(() => {
+    if (!currentUser) {
+      if (window.location.pathname !== '/login') {
+        window.history.replaceState(null, '', '/login');
+      }
+      document.title = 'KH CLINIC - Staff Login';
+      return;
+    }
+
+    const targetPath = activeView === 'dashboard' ? '/' : `/${activeView}`;
+    if (window.location.pathname !== targetPath) {
+      window.history.pushState({ view: activeView }, '', targetPath);
+    }
+    document.title = VIEW_TITLES[activeView] || `KH CLINIC - ${activeView.replace(/-/g, ' ').toUpperCase()}`;
+  }, [activeView, currentUser]);
+
+  // Handle browser Back / Forward history buttons
+  useEffect(() => {
+    const handlePopState = () => {
+      const rawPath = window.location.pathname.replace(/^\/+/, '').split('/')[0];
+      const view = VIEW_MAP[rawPath] || 'dashboard';
+      setActiveView(view);
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   const loadStats = async () => {
     try {
