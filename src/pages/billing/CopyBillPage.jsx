@@ -23,10 +23,20 @@ export default function CopyBillPage({ onNavigate, currentUser }) {
   const [registrations, setRegistrations] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Filters
+  const getTodayStr = () => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const todayStr = getTodayStr();
+
+  // Filters - default to Today
   const [searchQuery, setSearchQuery] = useState('');
-  const [fromDate, setFromDate] = useState('');
-  const [toDate, setToDate] = useState('');
+  const [fromDate, setFromDate] = useState(todayStr);
+  const [toDate, setToDate] = useState(todayStr);
 
   // Selected item for preview & duplicate print
   const [previewBill, setPreviewBill] = useState(null);
@@ -45,25 +55,32 @@ export default function CopyBillPage({ onNavigate, currentUser }) {
       }
     })();
 
-  // Load both bills and registrations
-  const loadData = async () => {
+  // Load both bills and registrations (defaults to today's records)
+  const loadData = async (all = false, customFrom = fromDate, customTo = toDate) => {
     setLoading(true);
     try {
+      const params = {};
+      if (all) {
+        params.allRecords = true;
+      } else {
+        if (customFrom) params.startDate = customFrom;
+        if (customTo) params.endDate = customTo;
+      }
       const [billList, regList] = await Promise.all([
-        api.getBills(),
-        api.getRegistrations()
+        api.getCopyBills ? api.getCopyBills(params) : api.getBills(params),
+        api.getCopyRegistrations ? api.getCopyRegistrations(params) : api.getRegistrations(params)
       ]);
       setBills(billList || []);
       setRegistrations(regList || []);
     } catch (err) {
-      console.error('Error loading bills/registrations:', err);
+      console.error('Error loading copy bills/registrations:', err);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadData();
+    loadData(false, todayStr, todayStr);
   }, []);
 
   // Filter service bills
@@ -125,16 +142,44 @@ export default function CopyBillPage({ onNavigate, currentUser }) {
     });
   }, [registrations, searchQuery, fromDate, toDate]);
 
-  const handleResetFilters = () => {
+  const setFilterToday = () => {
+    const today = getTodayStr();
+    setFromDate(today);
+    setToDate(today);
+    loadData(false, today, today);
+  };
+
+  const handleShowAll = () => {
     setSearchQuery('');
     setFromDate('');
     setToDate('');
+    loadData(true, '', '');
   };
 
-  const setFilterToday = () => {
-    const today = new Date().toISOString().substring(0, 10);
+  const handleResetFilters = () => {
+    setSearchQuery('');
+    const today = getTodayStr();
     setFromDate(today);
     setToDate(today);
+    loadData(false, today, today);
+  };
+
+  const handleFromDateChange = (val) => {
+    setFromDate(val);
+    if (!val && !toDate) {
+      loadData(true, '', '');
+    } else {
+      loadData(false, val, toDate);
+    }
+  };
+
+  const handleToDateChange = (val) => {
+    setToDate(val);
+    if (!fromDate && !val) {
+      loadData(true, '', '');
+    } else {
+      loadData(false, fromDate, val);
+    }
   };
 
   const handlePrintServiceBill = (bill) => {
@@ -281,7 +326,7 @@ export default function CopyBillPage({ onNavigate, currentUser }) {
               className="form-control"
               style={{ height: '38px', fontSize: '0.88rem' }}
               value={fromDate}
-              onChange={(e) => setFromDate(e.target.value)}
+              onChange={(e) => handleFromDateChange(e.target.value)}
             />
           </div>
 
@@ -295,16 +340,16 @@ export default function CopyBillPage({ onNavigate, currentUser }) {
               className="form-control"
               style={{ height: '38px', fontSize: '0.88rem' }}
               value={toDate}
-              onChange={(e) => setToDate(e.target.value)}
+              onChange={(e) => handleToDateChange(e.target.value)}
             />
           </div>
 
           {/* Quick Buttons */}
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             <button
               type="button"
-              className="btn btn-secondary btn-sm"
-              style={{ height: '38px', padding: '0 12px', fontWeight: '600' }}
+              className={`btn btn-sm ${fromDate === todayStr && toDate === todayStr ? 'btn-primary' : 'btn-secondary'}`}
+              style={{ height: '38px', padding: '0 14px', fontWeight: '700' }}
               onClick={setFilterToday}
               title="Filter records created today"
             >
@@ -312,10 +357,19 @@ export default function CopyBillPage({ onNavigate, currentUser }) {
             </button>
             <button
               type="button"
+              className={`btn btn-sm ${!fromDate && !toDate ? 'btn-primary' : 'btn-secondary'}`}
+              style={{ height: '38px', padding: '0 14px' }}
+              onClick={handleShowAll}
+              title="Show all records without date restrictions"
+            >
+              All Records
+            </button>
+            <button
+              type="button"
               className="btn btn-secondary btn-sm"
               style={{ height: '38px', padding: '0 12px' }}
               onClick={handleResetFilters}
-              title="Clear all filters"
+              title="Reset filters to default (Today)"
             >
               Reset
             </button>
@@ -332,10 +386,25 @@ export default function CopyBillPage({ onNavigate, currentUser }) {
       ) : activeTab === 'SERVICE_BILLS' ? (
         /* ======================== TAB 1: SERVICE BILLS ======================== */
         <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-            <span style={{ fontSize: '0.88rem', fontWeight: '700', color: '#1e3a8a' }}>
-              Found {filteredBills.length} Service Invoices
-            </span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ fontSize: '0.88rem', fontWeight: '700', color: '#1e3a8a' }}>
+                Found {filteredBills.length} Service Invoices
+              </span>
+              {fromDate === todayStr && toDate === todayStr ? (
+                <span style={{ background: '#dbeafe', color: '#1e40af', padding: '2px 8px', borderRadius: '4px', fontSize: '0.74rem', fontWeight: '600' }}>
+                  Showing: Today ({todayStr})
+                </span>
+              ) : !fromDate && !toDate ? (
+                <span style={{ background: '#f1f5f9', color: '#475569', padding: '2px 8px', borderRadius: '4px', fontSize: '0.74rem', fontWeight: '600' }}>
+                  Showing: All Records
+                </span>
+              ) : (
+                <span style={{ background: '#fef3c7', color: '#92400e', padding: '2px 8px', borderRadius: '4px', fontSize: '0.74rem', fontWeight: '600' }}>
+                  Showing: {fromDate || 'Start'} to {toDate || 'End'}
+                </span>
+              )}
+            </div>
             <span style={{ fontSize: '0.78rem', color: '#64748b' }}>
               Click <strong>"Print Copy Bill"</strong> on any row to preview and reprint duplicate invoice.
             </span>
@@ -427,10 +496,25 @@ export default function CopyBillPage({ onNavigate, currentUser }) {
       ) : (
         /* ======================== TAB 2: OP REGISTRATIONS ======================== */
         <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-            <span style={{ fontSize: '0.88rem', fontWeight: '700', color: '#1e3a8a' }}>
-              Found {filteredRegistrations.length} OP Registrations
-            </span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ fontSize: '0.88rem', fontWeight: '700', color: '#1e3a8a' }}>
+                Found {filteredRegistrations.length} OP Registrations
+              </span>
+              {fromDate === todayStr && toDate === todayStr ? (
+                <span style={{ background: '#dbeafe', color: '#1e40af', padding: '2px 8px', borderRadius: '4px', fontSize: '0.74rem', fontWeight: '600' }}>
+                  Showing: Today ({todayStr})
+                </span>
+              ) : !fromDate && !toDate ? (
+                <span style={{ background: '#f1f5f9', color: '#475569', padding: '2px 8px', borderRadius: '4px', fontSize: '0.74rem', fontWeight: '600' }}>
+                  Showing: All Records
+                </span>
+              ) : (
+                <span style={{ background: '#fef3c7', color: '#92400e', padding: '2px 8px', borderRadius: '4px', fontSize: '0.74rem', fontWeight: '600' }}>
+                  Showing: {fromDate || 'Start'} to {toDate || 'End'}
+                </span>
+              )}
+            </div>
             <span style={{ fontSize: '0.78rem', color: '#64748b' }}>
               Click <strong>"Print Duplicate Slip"</strong> on any row to preview and reprint OP token slip.
             </span>

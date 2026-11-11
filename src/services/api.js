@@ -89,7 +89,21 @@ export const api = {
   modifyRegDoctor: (data) => request('/registration/modify-doctor', { method: 'PUT', body: JSON.stringify(data) }),
   modifyRegPatientType: (data) => request('/registration/modify-patient-type', { method: 'PUT', body: JSON.stringify(data) }),
   modifyRegPaymentType: (data) => request('/registration/modify-payment-type', { method: 'PUT', body: JSON.stringify(data) }),
-  getRegistrations: (query = '') => request(`/registration/list${query ? `?query=${encodeURIComponent(query)}` : ''}`),
+  getRegistrations: (params = '') => {
+    if (typeof params === 'string') {
+      return request(`/registration/list${params ? `?query=${encodeURIComponent(params)}` : ''}`);
+    }
+    const q = new URLSearchParams(params).toString();
+    return request(`/registration/list${q ? `?${q}` : ''}`);
+  },
+  getCopyRegistrations: async (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    try {
+      return await request(`/registration/copy-bills${q ? `?${q}` : ''}`);
+    } catch (e) {
+      return await request(`/registration/list${q ? `?${q}` : ''}`);
+    }
+  },
   searchPatients: (query = '') => request(`/registration/patients/search${query ? `?query=${encodeURIComponent(query)}` : ''}`),
 
   // Billing
@@ -98,7 +112,21 @@ export const api = {
   modifyBillPaymentType: (data) => request('/billing/modify-payment-type', { method: 'PUT', body: JSON.stringify(data) }),
   refundBillItem: (data) => request('/billing/refund-item', { method: 'POST', body: JSON.stringify(data) }),
   refundFullBill: (data) => request('/billing/refund-full', { method: 'POST', body: JSON.stringify(data) }),
-  getBills: (query = '') => request(`/billing/list${query ? `?query=${encodeURIComponent(query)}` : ''}`),
+  getBills: (params = '') => {
+    if (typeof params === 'string') {
+      return request(`/billing/list${params ? `?query=${encodeURIComponent(params)}` : ''}`);
+    }
+    const q = new URLSearchParams(params).toString();
+    return request(`/billing/list${q ? `?${q}` : ''}`);
+  },
+  getCopyBills: async (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    try {
+      return await request(`/billing/copy-bills${q ? `?${q}` : ''}`);
+    } catch (e) {
+      return await request(`/billing/list${q ? `?${q}` : ''}`);
+    }
+  },
   getBillById: (id) => request(`/billing/${id}`),
 
   // Reports
