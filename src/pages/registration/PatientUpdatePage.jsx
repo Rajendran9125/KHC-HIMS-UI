@@ -71,8 +71,49 @@ export default function PatientUpdatePage() {
     return age >= 0 ? age : 0;
   };
 
-  const handleDobChange = (e) => {
-    const dobVal = e.target.value;
+  const calculateDobFromAge = (ageVal, currentDob = '') => {
+    if (ageVal === '' || ageVal === null || ageVal === undefined) return '';
+    const ageNum = parseInt(ageVal, 10);
+    if (isNaN(ageNum) || ageNum < 0 || ageNum > 130) return '';
+    const today = new Date();
+    const birthYear = today.getFullYear() - ageNum;
+
+    let m = today.getMonth() + 1;
+    let d = today.getDate();
+
+    if (currentDob && typeof currentDob === 'string') {
+      const parts = currentDob.split('-');
+      if (parts.length === 3) {
+        const pM = parseInt(parts[1], 10);
+        const pD = parseInt(parts[2], 10);
+        if (!isNaN(pM) && pM >= 1 && pM <= 12) m = pM;
+        if (!isNaN(pD) && pD >= 1 && pD <= 31) d = pD;
+      }
+    }
+    const mStr = String(m).padStart(2, '0');
+    const dStr = String(d).padStart(2, '0');
+    return `${birthYear}-${mStr}-${dStr}`;
+  };
+
+  const handleAgeChange = (e) => {
+    const val = e.target.value;
+    if (val === '') {
+      setForm(prev => ({ ...prev, age: '', dob: '' }));
+      return;
+    }
+    const computedDob = calculateDobFromAge(val, form.dob);
+    setForm(prev => ({
+      ...prev,
+      age: val,
+      dob: computedDob || prev.dob
+    }));
+  };
+
+  const handleDobChange = (dobVal) => {
+    if (!dobVal) {
+      setForm(prev => ({ ...prev, dob: '', age: '' }));
+      return;
+    }
     const computedAge = calculateAgeFromDob(dobVal);
     setForm(prev => ({
       ...prev,
@@ -290,14 +331,7 @@ export default function PatientUpdatePage() {
               <label className="form-label">Date of Birth (DOB)</label>
               <DobDatePicker 
                 value={form.dob}
-                onChange={(dobVal) => {
-                  const computedAge = calculateAgeFromDob(dobVal);
-                  setForm(prev => ({
-                    ...prev,
-                    dob: dobVal,
-                    age: computedAge !== '' ? computedAge : prev.age
-                  }));
-                }}
+                onChange={handleDobChange}
               />
             </div>
 
@@ -310,7 +344,7 @@ export default function PatientUpdatePage() {
                 min="0" 
                 max="125"
                 value={form.age}
-                onChange={(e) => setForm({...form, age: e.target.value})}
+                onChange={handleAgeChange}
               />
             </div>
 

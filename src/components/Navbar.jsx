@@ -62,7 +62,7 @@ export default function Navbar({ activeView, setActiveView, currentUser, onLogou
   const hasMasterAccess = isAdmin || isAllowed('admin') || isAllowed('users') || isAllowed('services') || isAllowed('location-master');
   const hasRegAccess = isAdmin || ['op-new', 'op-review', 'patient-update', 'modify-doctor-reg', 'modify-patient-type'].some(isAllowed);
   const hasBillAccess = isAdmin || ['op-billing', 'copy-bill', 'modify-doctor-bill', 'modify-payment-type-bill', 'refund-billing'].some(isAllowed);
-  const hasReportAccess = isAdmin || ['report-billing', 'report-revenue', 'report-registration'].some(isAllowed);
+  const hasReportAccess = isAdmin || ['report-billing', 'report-revenue', 'report-registration', 'report-collection', 'report-outstanding'].some(isAllowed);
 
   return (
     <header className="navbar-container" ref={navRef}>
@@ -379,7 +379,7 @@ export default function Navbar({ activeView, setActiveView, currentUser, onLogou
             onMouseLeave={() => setOpenMenu(null)}
           >
             <button 
-              className={`nav-menu-btn ${['report-billing', 'report-revenue', 'report-registration'].includes(activeView) ? 'active' : ''}`}
+              className={`nav-menu-btn ${['report-billing', 'report-revenue', 'report-registration', 'report-collection', 'report-outstanding'].includes(activeView) ? 'active' : ''}`}
               onClick={() => toggleDropdown('report')}
             >
               <BarChart3 size={17} />
@@ -402,19 +402,6 @@ export default function Navbar({ activeView, setActiveView, currentUser, onLogou
                   </button>
                 )}
 
-                {isAllowed('report-revenue') && (
-                  <button 
-                    className={`dropdown-item ${activeView === 'report-revenue' ? 'active' : ''}`}
-                    onClick={() => handleSelect('report-revenue')}
-                  >
-                    <span className="dropdown-bullet"></span>
-                    <div className="dropdown-text">
-                      <div className="dropdown-title">REVENUE (SUMMARY + SERVICE WISE)</div>
-                      <div className="dropdown-desc">Category Breakdown &amp; Financial Inflow</div>
-                    </div>
-                  </button>
-                )}
-
                 {isAllowed('report-registration') && (
                   <button 
                     className={`dropdown-item ${activeView === 'report-registration' ? 'active' : ''}`}
@@ -422,8 +409,47 @@ export default function Navbar({ activeView, setActiveView, currentUser, onLogou
                   >
                     <span className="dropdown-bullet"></span>
                     <div className="dropdown-text">
-                      <div className="dropdown-title">OP PATIENT SEARCH OPTION</div>
+                      <div className="dropdown-title">OP REPORT (REGISTRATION)</div>
                       <div className="dropdown-desc">Search Patients, Footfall &amp; Doctor Visits</div>
+                    </div>
+                  </button>
+                )}
+
+                {isAllowed('report-revenue') && (
+                  <button 
+                    className={`dropdown-item ${activeView === 'report-revenue' ? 'active' : ''}`}
+                    onClick={() => handleSelect('report-revenue')}
+                  >
+                    <span className="dropdown-bullet"></span>
+                    <div className="dropdown-text">
+                      <div className="dropdown-title">REVENUE REPORT</div>
+                      <div className="dropdown-desc">Diagnostic Headers &amp; Category Breakdown</div>
+                    </div>
+                  </button>
+                )}
+
+                {(isAdmin || isAllowed('report-collection') || isAllowed('report-billing')) && (
+                  <button 
+                    className={`dropdown-item ${activeView === 'report-collection' ? 'active' : ''}`}
+                    onClick={() => handleSelect('report-collection')}
+                  >
+                    <span className="dropdown-bullet"></span>
+                    <div className="dropdown-text">
+                      <div className="dropdown-title">COLLECTION REPORT</div>
+                      <div className="dropdown-desc">Cash, Card, UPI &amp; Bank Collections</div>
+                    </div>
+                  </button>
+                )}
+
+                {(isAdmin || isAllowed('report-outstanding') || isAllowed('report-billing')) && (
+                  <button 
+                    className={`dropdown-item ${activeView === 'report-outstanding' ? 'active' : ''}`}
+                    onClick={() => handleSelect('report-outstanding')}
+                  >
+                    <span className="dropdown-bullet"></span>
+                    <div className="dropdown-text">
+                      <div className="dropdown-title">OUTSTANDING REPORT</div>
+                      <div className="dropdown-desc">Corporate &amp; General Outstanding Dues</div>
                     </div>
                   </button>
                 )}

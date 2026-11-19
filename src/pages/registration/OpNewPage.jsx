@@ -101,6 +101,44 @@ export default function OpNewPage({ onRegistrationSuccess, currentUser }) {
     return age >= 0 ? age : 0;
   };
 
+  const calculateDobFromAge = (ageVal, currentDob = '') => {
+    if (ageVal === '' || ageVal === null || ageVal === undefined) return '';
+    const ageNum = parseInt(ageVal, 10);
+    if (isNaN(ageNum) || ageNum < 0 || ageNum > 130) return '';
+    const today = new Date();
+    const birthYear = today.getFullYear() - ageNum;
+
+    let m = today.getMonth() + 1;
+    let d = today.getDate();
+
+    if (currentDob && typeof currentDob === 'string') {
+      const parts = currentDob.split('-');
+      if (parts.length === 3) {
+        const pM = parseInt(parts[1], 10);
+        const pD = parseInt(parts[2], 10);
+        if (!isNaN(pM) && pM >= 1 && pM <= 12) m = pM;
+        if (!isNaN(pD) && pD >= 1 && pD <= 31) d = pD;
+      }
+    }
+    const mStr = String(m).padStart(2, '0');
+    const dStr = String(d).padStart(2, '0');
+    return `${birthYear}-${mStr}-${dStr}`;
+  };
+
+  const handleAgeChange = (e) => {
+    const val = e.target.value;
+    if (val === '') {
+      setFormData(prev => ({ ...prev, age: '', dob: '' }));
+      return;
+    }
+    const computedDob = calculateDobFromAge(val, formData.dob);
+    setFormData(prev => ({
+      ...prev,
+      age: val,
+      dob: computedDob || prev.dob
+    }));
+  };
+
   const handleCountryChange = (e) => {
     const cId = e.target.value ? parseInt(e.target.value) : '';
     setFormData(prev => ({
@@ -475,6 +513,10 @@ export default function OpNewPage({ onRegistrationSuccess, currentUser }) {
               <DobDatePicker 
                 value={formData.dob}
                 onChange={(dobVal) => {
+                  if (!dobVal) {
+                    setFormData(prev => ({ ...prev, dob: '', age: '' }));
+                    return;
+                  }
                   const computedAge = calculateAgeFromDob(dobVal);
                   setFormData(prev => ({
                     ...prev,
@@ -494,7 +536,7 @@ export default function OpNewPage({ onRegistrationSuccess, currentUser }) {
                 min="0" 
                 max="125"
                 value={formData.age}
-                onChange={(e) => setFormData({...formData, age: e.target.value})}
+                onChange={handleAgeChange}
                 placeholder="e.g. 32"
               />
             </div>

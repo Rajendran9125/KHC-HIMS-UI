@@ -29,22 +29,28 @@ import CopyBillPage from './pages/billing/CopyBillPage';
 import OpBillingReportPage from './pages/reports/OpBillingReportPage';
 import RevenueReportPage from './pages/reports/RevenueReportPage';
 import OpRegistrationReportPage from './pages/reports/OpRegistrationReportPage';
+import CollectionReportPage from './pages/reports/CollectionReportPage';
+import OutstandingReportPage from './pages/reports/OutstandingReportPage';
 
 import { api } from './services/api';
 import { ShieldAlert } from 'lucide-react';
 
 export default function App() {
-  const [currentUser, setCurrentUser] = useState(() => {
-    try {
-      const saved = localStorage.getItem('khc_user');
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
-    }
-  });
+  // Always start with null so running/loading the frontend goes directly to the Login page
+  const [currentUser, setCurrentUser] = useState(null);
 
   const [activeView, setActiveView] = useState('dashboard');
   const [stats, setStats] = useState(null);
+
+  // Clear any previous persisted session on app startup to guarantee landing on the login page
+  useEffect(() => {
+    try {
+      localStorage.removeItem('khc_user');
+      sessionStorage.removeItem('khc_user');
+    } catch (e) {
+      // ignore
+    }
+  }, []);
 
   const loadStats = async () => {
     try {
@@ -63,17 +69,27 @@ export default function App() {
 
   const handleLoginSuccess = (userData) => {
     setCurrentUser(userData);
-    localStorage.setItem('khc_user', JSON.stringify(userData));
+    try {
+      localStorage.setItem('khc_user', JSON.stringify(userData));
+      sessionStorage.setItem('khc_user', JSON.stringify(userData));
+    } catch (e) {
+      // ignore
+    }
     setActiveView('dashboard');
   };
 
   const handleLogout = () => {
     setCurrentUser(null);
-    localStorage.removeItem('khc_user');
+    try {
+      localStorage.removeItem('khc_user');
+      sessionStorage.removeItem('khc_user');
+    } catch (e) {
+      // ignore
+    }
     setActiveView('dashboard');
   };
 
-  // If not logged in, render the login page
+  // If not logged in, always render the login page
   if (!currentUser) {
     return <LoginPage onLoginSuccess={handleLoginSuccess} />;
   }
@@ -155,6 +171,10 @@ export default function App() {
         return <RevenueReportPage />;
       case 'report-registration':
         return <OpRegistrationReportPage />;
+      case 'report-collection':
+        return <CollectionReportPage />;
+      case 'report-outstanding':
+        return <OutstandingReportPage />;
 
       // Default: Concept Overview
       case 'dashboard':

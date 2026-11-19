@@ -142,4 +142,12 @@ export const api = {
     const q = new URLSearchParams(params).toString();
     return request(`/reports/op-registration${q ? `?${q}` : ''}`);
   },
+  getCollectionReport: (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return request(`/reports/collection${q ? `?${q}` : ''}`);
+  },
+  getOutstandingReport: (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return request(`/reports/outstanding${q ? `?${q}` : ''}`);
+  },
 };
